@@ -8,3 +8,4 @@ install/build-*
 install/src/*.tar.*
 !install/src/*.tar.*.md5
 projects/builds
+projects/rts/rts-*
