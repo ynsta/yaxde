@@ -1,0 +1,73 @@
+-*- outline -*-
+
+* YAXDE
+
+YAXDE is a simple cross-dev environment for bare board systems.
+
+** Features
+*** Runs on Linux and MinGW (Mac might also work but not tested).
+*** Targets bare-board lightweight applications
+*** Easy to use
+*** Ada, C++, C and Assembly supported
+*** GNU based toolchain
+*** Modified BSD License
+*** Provides scripts and patch for x-gcc generation (with Ada support)
+
+
+* LANGUAGES
+
+Supported languages are Ada, C++, C and assembly
+
+** Ada
+Zero Foot Print
+
+
+** C++
+no stdlib
+
+
+** C
+no libc
+
+
+* LICENSES:
+
+** Modified BSD License
+All project files are covered by "Modified BSD License"
+Some files comes from other project with different licences
+
+** GCC (GPL with Link exception)
+Only system.ads is modified and included in this project.
+
+All other GNAT files are not distributed with this project but copied when the
+RTS is build from GCC installation. They are covered by GCC licence (GPL with
+Link exception).
+
+* TOOLCHAIN and TOOLS
+
+** Installation
+Tested on xubuntu 12.10 i686 and x86_64 :
+run
+# sudo make install-deps
+# make install-toolchain
+
+** TARGETs
+
+*** arm-none-eabi
+cortex-m0 cortex-m0+ cortex-m1 cortex-m3 cortex-m4 cortex-r cortex-a
+
+*** powerpc-none-elf
+
+*** m68k-none-elf
+coldfire only
+
+** MinGW setups
+MS Windows MinGW toolchain must be built under linux.
+To cross build a toolchain for mingw from ubuntu 12.10
+cd install
+make TARGETS="arm-none-eabi powerpc-none-elf m68k-none-elf"
+
+After a very long time get installers in install/builds/i686-pc-mingw32
+
+** TODO
+Add avr target support

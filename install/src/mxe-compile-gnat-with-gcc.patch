@@ -1,0 +1,27 @@
+From 744937c65c0021a3f7196996bd49b386972b31d7 Mon Sep 17 00:00:00 2001
+From: Stany MARCEL <stanypub@gmail.com>
+Date: Tue, 26 Mar 2013 01:58:53 +0100
+Subject: [PATCH] Compile gnat with gcc
+
+Signed-off-by: Stany MARCEL <stanypub@gmail.com>
+---
+ src/gcc.mk |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/gcc.mk b/src/gcc.mk
+index 6090177..e6ad3b8 100644
+--- a/src/gcc.mk
++++ b/src/gcc.mk
+@@ -33,7 +33,8 @@ define $(PKG)_BUILD
+         --build="`config.guess`" \
+         --prefix='$(PREFIX)' \
+         --libdir='$(PREFIX)/lib' \
+-        --enable-languages='c,c++,objc,fortran' \
++        --enable-languages='c,c++,objc,fortran,ada' \
++        --enable-libada \
+         --enable-version-specific-runtime-libs \
+         --with-gcc \
+         --with-gnu-ld \
+-- 
+1.7.10.4
+

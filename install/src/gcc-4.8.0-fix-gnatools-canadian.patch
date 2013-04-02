@@ -1,0 +1,105 @@
+From ed2494835d28f60b845aa1cad8f0285a52f5243d Mon Sep 17 00:00:00 2001
+From: Stany MARCEL <stanypub@gmail.com>
+Date: Tue, 26 Mar 2013 13:26:23 +0100
+Subject: [PATCH] Fix gnatools makefile for cross canadian build
+
+Signed-off-by: Stany MARCEL <stanypub@gmail.com>
+---
+ gnattools/Makefile.in |   39 +++++++++++++++++++++++++++++++++------
+ 1 file changed, 33 insertions(+), 6 deletions(-)
+
+diff --git a/gnattools/Makefile.in b/gnattools/Makefile.in
+index 794d374..974b418 100644
+--- a/gnattools/Makefile.in
++++ b/gnattools/Makefile.in
+@@ -5,12 +5,12 @@
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation; either version 3 of the License, or
+ # (at your option) any later version.
+-# 
++#
+ # This program is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+-# 
++#
+ # You should have received a copy of the GNU General Public License
+ # along with this program; see the file COPYING3.  If not see
+ # <http://www.gnu.org/licenses/>.
+@@ -23,6 +23,7 @@ SHELL = @SHELL@
+ srcdir = @srcdir@
+ libdir = @libdir@
+ build = @build@
++host = @host@
+ target = @target@
+ prefix = @prefix@
+ INSTALL = @INSTALL@
+@@ -96,6 +97,7 @@ TOOLS_FLAGS_TO_PASS_RE= \
+ 	"GNATBIND=../../gnatbind" \
+ 	"TOOLSCASE=cross"
+ 
++ifeq ($(build), $(host))
+ # Variables for gnattools, cross
+ TOOLS_FLAGS_TO_PASS_CROSS= \
+ 	"CC=$(CC)" \
+@@ -113,6 +115,25 @@ TOOLS_FLAGS_TO_PASS_CROSS= \
+ 	"GNATBIND=gnatbind" \
+ 	"TOOLSCASE=cross" \
+ 	"LIBGNAT="
++else
++# Variables for gnattools, cross canadian
++TOOLS_FLAGS_TO_PASS_CROSS= \
++	"CC=$(CC)" \
++	"CFLAGS=$(CFLAGS) $(WARN_CFLAGS)" \
++	"LDFLAGS=$(LDFLAGS)" \
++	"ADAFLAGS=$(ADAFLAGS)"	\
++	"ADA_CFLAGS=$(ADA_CFLAGS)" \
++	"INCLUDES=$(INCLUDES_FOR_SUBDIR)" \
++	"ADA_INCLUDES=-I$(RTS_DIR)../adainclude -I$(RTS_DIR) $(ADA_INCLUDES_FOR_SUBDIR)" \
++	"exeext=$(exeext)" \
++	"fsrcdir=$(fsrcdir)" \
++	"srcdir=$(fsrcdir)" \
++	"GNATMAKE=$(host)-gnatmake" \
++	"GNATLINK=$(host)-gnatlink" \
++	"GNATBIND=$(host)-gnatbind" \
++	"TOOLSCASE=cross" \
++	"LIBGNAT="
++endif
+ 
+ # File lists
+ # ----------
+@@ -152,12 +173,12 @@ $(GCC_DIR)/stamp-tools:
+ 	                $(GCC_DIR)/ada/tools/$(word 1,$(subst <, ,$(PAIR)));)
+ 	touch $(GCC_DIR)/stamp-tools
+ 
+-# gnatmake/link tools cannot always be built with gnatmake/link for bootstrap 
++# gnatmake/link tools cannot always be built with gnatmake/link for bootstrap
+ # reasons: gnatmake should be built with a recent compiler, a recent compiler
+ # may not generate ALI files compatible with an old gnatmake so it is important
+-# to be able to build gnatmake without a version of gnatmake around. Once 
+-# everything has been compiled once, gnatmake can be recompiled with itself 
+-# (see target regnattools) 
++# to be able to build gnatmake without a version of gnatmake around. Once
++# everything has been compiled once, gnatmake can be recompiled with itself
++# (see target regnattools)
+ gnattools-native: $(GCC_DIR)/stamp-tools $(GCC_DIR)/stamp-gnatlib-rts
+ 	# gnattools1
+ 	$(MAKE) -C $(GCC_DIR)/ada/tools -f ../Makefile \
+@@ -183,7 +204,13 @@ regnattools: $(GCC_DIR)/stamp-gnatlib-rts
+ # put the host RTS dir first in the PATH to hide the default runtime
+ # files that are among the sources
+ # FIXME: This should be done in configure.
++ifeq ($(build), $(host))
+ RTS_DIR:=$(strip $(subst \,/,$(shell gnatls -v | grep adalib )))
++else
++RTS_DIR:=$(strip $(subst \,/,$(shell $(host)-gnatls -v | grep adalib )))
++endif
++
++
+ gnattools-cross: $(GCC_DIR)/stamp-tools
+ 	# gnattools1-re
+ 	$(MAKE) -C $(GCC_DIR)/ada/tools -f ../Makefile \
+-- 
+1.7.10.4
+
