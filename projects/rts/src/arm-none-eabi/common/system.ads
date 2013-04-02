@@ -42,7 +42,7 @@ pragma Restrictions (No_Finalization);
 pragma Restrictions (No_Tasking);
 pragma Discard_Names;
 
---  Other Restictions
+--  Other Restrictions
 pragma Restrictions (No_Secondary_Stack);
 
 package System is
