@@ -30,7 +30,7 @@ LANGUAGES="c,c++,ada"
 
 GCCEXTRACFG=" \
 --with-mode=thumb \
---with-multilib-list=cortex-m3,cortex-m4,cortex-r,cortex-a"
+--with-multilib-list=all"
 
 MULTILIB=1
 
