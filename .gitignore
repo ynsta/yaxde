@@ -1,11 +1,10 @@
 *.ali
 *.o
 *.a
-rts/rts-*
 *.map
-install/builds/
-install/build-*
-install/src/*.tar.*
-!install/src/*.tar.*.md5
-projects/builds
-projects/rts/rts-*
+rts/rts-*/
+toolchain/builds/
+toolchain/build-*/
+toolchain/src/*.tar.*
+!toolchain/src/*.tar.*.md5
+builds/
