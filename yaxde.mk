@@ -25,24 +25,57 @@
 # EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-# Board Configuration File
+targets		:= arm-none-eabi qemu stlink
 
-ldfile		:= $(cdir)/flash.ld
+ada_projects	:= $(notdir $(dir $(wildcard programs/*/program.adb)))
+ada_boards	:= $(notdir $(wildcard boards/ada-*))
 
-target		:= arm-none-eabi
+all_projects	:= $(notdir $(wildcard programs/*))
+all_boards	:= $(notdir $(wildcard boards/*))
 
-# choosen rts for cortex m4 with hard float
-rts		:= rts-arm-none-eabi_armv7e-m_hard
+oth_projects	:= $(filter-out $(ada_projects), $(all_projects))
+oth_board	:= $(filter-out $(ada_board), $(all_board))
 
-# get real absolute path
-rts_path	:= $(realpath $(cdir)/../../rts)
+build_lst	:= \
+	$(foreach b,$(ada_boards),$(addprefix build~$(b)~,$(ada_projects))) \
+	$(foreach b,$(all_boards),$(addprefix build~$(b)~,$(oth_projects)))
 
-RTS		:= --RTS=$(rts_path)/$(rts)
+clean_lst	:= \
+	$(foreach b,$(ada_boards),$(addprefix clean~$(b)~,$(ada_projects))) \
+	$(foreach b,$(all_boards),$(addprefix clean~$(b)~,$(oth_projects)))
 
-brd_reqs	:= \
-	$(build_dir)/start.o \
-	$(rts_path)/$(rts)/adalib/libgnat.a
+distclean_lst	:= \
+	$(foreach b,$(ada_boards),$(addprefix distclean~$(b)~,$(ada_projects))) \
+	$(foreach b,$(all_boards),$(addprefix distclean~$(b)~,$(oth_projects)))
 
+space		:=
+space		+=
 
-# Include rts config
--include $(rts_path)/$(rts)/config.mk
+all: $(build_lst)
+
+clean: $(clean_lst)
+
+distclean: $(distclean_lst)
+
+$(build_lst):
+	$(eval prj := $(word 3,$(subst ~,$(space),$@)))
+	$(eval brd := $(word 2,$(subst ~,$(space),$@)))
+	$(MAKE) -C . P=$(prj) B=$(brd)
+
+$(clean_lst):
+	$(eval prj := $(word 3,$(subst ~,$(space),$@)))
+	$(eval brd := $(word 2,$(subst ~,$(space),$@)))
+	$(MAKE) -C . P=$(prj) B=$(brd) clean
+
+$(distclean_lst):
+	$(eval prj := $(word 3,$(subst ~,$(space),$@)))
+	$(eval brd := $(word 2,$(subst ~,$(space),$@)))
+	$(MAKE) -C . P=$(prj) B=$(brd) distclean
+
+install-deps:
+	$(MAKE) -C toolchain deps
+
+install-toolchain:
+	BASEPATH=$(toolchain) TARGETS=$(targets) $(MAKE) -C toolchain host
+
+.PHONY: all clean distclean $(build_lst) $(clean_lst) $(distclean_lst)

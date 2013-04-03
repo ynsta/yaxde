@@ -25,63 +25,231 @@
 # EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-ifeq ($(toolchain),)
-toolchain	:= /opt/x-tools
-endif
+# =====================================================================
+# Macro and usefull variables
+# cdir is the current absolute directory (also usable in included makefiles)
+cdir		= $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
 
-targets		:= arm-none-eabi qemu stlink
-
-ada_projects	:= $(notdir $(dir $(wildcard projects/programs/*/program.adb)))
-ada_boards	:= $(notdir $(wildcard projects/boards/ada-*))
-
-all_projects	:= $(notdir $(wildcard projects/programs/*))
-all_boards	:= $(notdir $(wildcard projects/boards/a*))
-
-oth_projects	:= $(filter-out $(ada_projects), $(all_projects))
-oth_board	:= $(filter-out $(ada_board), $(all_board))
-
-build_lst	:= \
-	$(foreach b,$(ada_boards),$(addprefix build~$(b)~,$(ada_projects))) \
-	$(foreach b,$(all_boards),$(addprefix build~$(b)~,$(oth_projects)))
-
-clean_lst	:= \
-	$(foreach b,$(ada_boards),$(addprefix clean~$(b)~,$(ada_projects))) \
-	$(foreach b,$(all_boards),$(addprefix clean~$(b)~,$(oth_projects)))
-
-distclean_lst	:= \
-	$(foreach b,$(ada_boards),$(addprefix distclean~$(b)~,$(ada_projects))) \
-	$(foreach b,$(all_boards),$(addprefix distclean~$(b)~,$(oth_projects)))
-
+# space is a variable with one space
 space		:=
 space		+=
 
+# =====================================================================
+# Defines
+
+boards_dir	:= $(or $(realpath $(BOARDS_DIR)), $(cdir)/boards)
+programs_dir	:= $(or $(realpath $(PROGRAMS_DIR)), $(cdir)/programs)
+build_dir	:= $(or $(realpath $(BUILD_DIR)), $(realpath $(programs_dir)/..)/builds)/$(P)/$(B)
+toolchain	:= $(or $(realpath $(TOOLCHAIN)), /opt/x-tools)
+
+# Test if P and B exist
+progr		:= $(and $(realpath $(programs_dir)/$(P)),$(P))
+board		:= $(and $(realpath $(boards_dir)/$(B)),$(B))
+
+define HELP
+
+= YAXDE Makefile help =
+
+Required arguments:
+
+  Arguments are variables passed to make (make ARG=value)
+
+  P             : The program to build (found: $(notdir $(wildcard $(programs_dir)/*)))
+  B             : The selected board (found: $(notdir $(wildcard $(boards_dir)/*)))
+
+Optional arguments:
+
+  PROGRAMS_DIR  : base path of programs (current: $(programs_dir))
+  BOARDS_DIR    : base path of boards (current: $(boards_dir))
+  BUILD_DIR     : base path for build objects (current: $(build_dir))
+  TOOLCHAIN     : base path of installed toolchain (current: $(toolchain))
+
+Rules:
+
+  all           : build program
+  clean         : remove temporary objects
+  distclean     : remove all generated files
+  help          : display this help
+
+  egdb          : run gdb in emacs
+  xgdb          : run gdb in xterm
+  gdb           : run gdb
+
+endef
+
+
+# Test if P not empty or give help with programs list
+ifneq ($(strip $(board)),)
+
+# Include board configuration
+-include $(boards_dir)/$(board)/config.mk
+
+ifneq ($(strip $(progr)),)
+
+# Export PATH with toolchains first
 export PATH	:= $(subst $(space),:,$(wildcard $(toolchain)/*/bin)):$(PATH)
 
-all: $(build_lst)
+program		:= $(build_dir)/$(progr)
 
-clean: $(clean_lst)
+ada_libs	:= $(foreach l,$(LIBS),$(wildcard libraries/$(l)/ada))
 
-distclean: $(distclean_lst)
+libada		:= $(build_dir)/libada.a
 
-$(build_lst):
-	$(eval prj := $(word 3,$(subst ~,$(space),$@)))
-	$(eval brd := $(word 2,$(subst ~,$(space),$@)))
-	$(MAKE) -C projects P=$(prj) B=$(brd)
+ADA_INCLUDE_PATH:= $(programs_dir)/$(progr):$(boards_dir)/$(board):$(subst $(space),:,$(ada_libs))
 
-$(clean_lst):
-	$(eval prj := $(word 3,$(subst ~,$(space),$@)))
-	$(eval brd := $(word 2,$(subst ~,$(space),$@)))
-	$(MAKE) -C projects P=$(prj) B=$(brd) clean
+export ADA_INCLUDE_PATH
 
-$(distclean_lst):
-	$(eval prj := $(word 3,$(subst ~,$(space),$@)))
-	$(eval brd := $(word 2,$(subst ~,$(space),$@)))
-	$(MAKE) -C projects P=$(prj) B=$(brd) distclean
+ada_paths	:= $(subst :,$(space),$(ADA_INCLUDE_PATH))
+ada_specs	:= $(foreach d,$(ada_paths),$(wildcard $(d)/*.ads))
+ada_bodys	:= $(foreach d,$(ada_paths),$(wildcard $(d)/*.adb))
 
-install-deps:
-	$(MAKE) -C install deps
+ada_objects	:= $(sort \
+	$(addprefix $(build_dir)/,$(notdir $(ada_bodys:.adb=.o))) \
+	$(addprefix $(build_dir)/,$(notdir $(ada_specs:.ads=.o))))
 
-install-toolchain:
-	BASEPATH=$(toolchain) TARGETS=$(targets) $(MAKE) -C install host
 
-.PHONY: all clean distclean $(build_lst) $(clean_lst) $(distclean_lst)
+ifneq ($(strip $(ada_objects)),)
+ADA_BUILD	:= 1
+  ifeq ($(strip $(rts)),)
+    $(error "RTS must be defined in board to build with Ada support")
+  endif
+endif
+
+c_libs		:= $(foreach l,$(LIBS),$(wildcard libraries/$(l)/c))
+cc_libs		:= $(foreach l,$(LIBS),$(wildcard libraries/$(l)/cc))
+asm_libs	:= $(foreach l,$(LIBS),$(wildcard libraries/$(l)/asm))
+
+
+# VPATH
+vpath %.S   $(programs_dir)/$(progr):$(boards_dir)/$(board):$(subst $(space),:,$(asm_libs))
+vpath %.c   $(programs_dir)/$(progr):$(boards_dir)/$(board):$(subst $(space),:,$(c_libs))
+vpath %.cc  $(programs_dir)/$(progr):$(boards_dir)/$(board):$(subst $(space),:,$(cc_libs))
+vpath %.cpp $(programs_dir)/$(progr):$(boards_dir)/$(board):$(subst $(space),:,$(cc_libs))
+
+
+sources		:= $(foreach pat,*.S *.c *.cc *.cpp,$(wildcard $(programs_dir)/$(progr)/$(pat)))
+sources		+= $(foreach pat,*.S *.c *.cc *.cpp,$(wildcard $(boards_dir)/$(board)/$(pat)))
+sources		+= $(foreach l,$(c_libs),$(l)/*.c)
+sources		+= $(foreach l,$(cc_libs),$(l)/*.cc)
+sources		+= $(foreach l,$(cc_libs),$(l)/*.cpp)
+sources		+= $(foreach l,$(asm_libs),$(l)/*.S)
+
+objects__	:= $(filter %.o, $(sources:.c=.o) $(sources:.S=.o) $(sources:.cc=.o) $(sources:.cpp=.o))
+objects_	:= $(sort $(addprefix $(build_dir)/,$(notdir $(objects__))))
+objects		:= $(filter-out $(brd_reqs),$(objects_))
+
+c_includes	:= $(addprefix -I, $(programs_dir)/$(progr) $(boards_dir)/$(board) $(c_libs) $(asm_libs))
+cc_includes	:= $(c_includes) $(addprefix -I, $(cc_libs))
+
+CXXFLAGS	:= $(CFLAGS) -g $(cc_includes)
+CFLAGS		+= -g $(c_includes)
+
+LDFLAGS		:= -nostartfiles -nodefaultlibs -nostdlib \
+-Wl,-T$(ldfile) -Wl,-Map -Wl,$(program).map -Wl,--cref -Wl,--gc-sections
+
+# Include program configuration
+-include $(programs_dir)/$(progr)/config.mk
+
+
+# =====================================================================
+# Rules
+
+all: $(program).bin | $(build_dir)
+
+
+$(program).bin: $(program) | $(build_dir)
+	@echo "[COPY]	$@"
+	@$(target)-objcopy -O binary $< $@
+
+$(program): $(brd_reqs) $(objects) $(libada) | $(build_dir)
+	@echo "[LINK]	$@"
+	@$(target)-g++ $(LDFLAGS) $^ -o $(program)
+
+
+$(build_dir)/%.o: %.S | $(build_dir)
+	@echo "[AS]	$<"
+	@$(target)-gcc $(CFLAGS) -c $< -o $@
+
+$(build_dir)/%.o: %.c | $(build_dir)
+	@echo "[CC]	$<"
+	@$(target)-gcc $(CFLAGS) -c $< -o $@
+
+$(build_dir)/%.o: %.cc | $(build_dir)
+	@echo "[C++]	$<"
+	@$(target)-g++ $(CXXFLAGS) -c $< -o $@
+
+$(build_dir)/%.o: %.cpp | $(build_dir)
+	@echo "[C++]	$<"
+	@$(target)-g++ $(CXXFLAGS) -c $< -o $@
+
+
+ifdef ADA_BUILD
+
+$(libada): $(build_dir)/ada.o $(ada_objects) | $(build_dir)
+	@echo "[AR]	$@"
+	@$(target)-ar cr $@ $^
+
+$(build_dir)/ada.o: $(build_dir)/ada.adb | $(build_dir)
+	@echo "[AC]	$^"
+	@$(target)-gcc $(RTS) $(CFLAGS) -c $< -o $@
+
+$(build_dir)/ada.adb: $(ada_objects) | $(build_dir)
+	@echo "[BIND]	$@"
+	@cd $(build_dir); $(target)-gnatbind $(RTS) -n $(notdir $(ada_objects:.o=)) -o $(@F)
+
+define compile_ada
+$(1): $(filter %/$(strip $(2)).adb, $(ada_bodys)) $(filter %/$(strip $(2)).ads, $(ada_specs)) | $$(build_dir)
+	@echo "[AC]	$$^"
+	@$$(target)-gcc $$(RTS) $$(CFLAGS) $$(ADAFLAGS) -c $$< -o $$@
+endef
+
+$(foreach a,$(ada_objects),$(eval $(call compile_ada, $(a), $(notdir $(a:.o=)))))
+endif # ADA_BUILD
+
+
+# Include bord specific rules
+include $(boards_dir)/$(board)/rules.mk
+
+gdb:: $(program)
+	@$(target)-gdb -ex "target remote localhost:1234" $(program)
+
+xgdb::
+	@xterm -T "gdb $(program)" -e $(target)-gdb -ex "target remote localhost:1234" $(program)
+
+egdb::
+	@emacs --eval '(gdb "$(target)-gdb -ex \"target remote localhost:1234\" --annotate=3 $(program)")'
+
+
+clean:: board_clean
+	@rm -f $(objects) $(libada) $(build_dir)/ada.o $(build_dir)/ada.ali  $(ada_objects) $(ada_objects:.o=.ali)
+
+distclean:: board_distclean  clean
+	@rm -rf $(build_dir)
+
+$(build_dir):
+	@mkdir -p $(build_dir)
+
+
+# Include program rules.mk
+-include $(programs_dir)/$(progr)/rules.mk
+
+endif # -z progr
+endif # -z board
+
+export HELP
+export BOARD_HELP
+help:
+	@echo "$$HELP"
+	@echo "$$BOARD_HELP"
+
+
+ifneq ($(B),$(board))
+$(warning Board '$(B)' not found in $(boards_dir))
+endif
+
+ifneq ($(P),$(progr))
+$(warning Program '$(P)' not found in $(programs_dir))
+endif
+
+
+.PHONY: all help clean distclean

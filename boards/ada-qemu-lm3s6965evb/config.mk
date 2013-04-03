@@ -43,6 +43,13 @@ brd_reqs	:= \
 	$(build_dir)/start.o \
 	$(rts_path)/$(rts)/adalib/libgnat.a
 
-
 # Include rts config
 -include $(rts_path)/$(rts)/config.mk
+
+
+define BOARD_HELP
+$(B) board specific rules:
+  xqemu         : run qemu in xterm
+  qemu          : run qemu
+
+endef

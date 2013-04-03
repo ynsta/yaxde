@@ -5,6 +5,7 @@
 YAXDE is a simple cross-dev environment for bare board systems.
 
 ** Features
+
 *** Runs on Linux and MinGW (Mac might also work but not tested).
 *** Targets bare-board lightweight applications
 *** Easy to use
@@ -12,6 +13,16 @@ YAXDE is a simple cross-dev environment for bare board systems.
 *** GNU based toolchain
 *** Modified BSD License
 *** Provides scripts and patch for x-gcc generation (with Ada support)
+
+
+** Directory Tree Description
+
+*** toolchain: Makefile and scripts to build and install x-toolchains
+*** boards: default base path for boards files (start, bsp, ...)
+*** libraries: default base path for libraries
+*** programs: default base path for user programs
+*** rts: ZFP Ada runtimes sources and build Makefile
+
 
 * LANGUAGES
 
