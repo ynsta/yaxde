@@ -65,8 +65,8 @@ builds		:= $(foreach t,$(targets),$(BASEPATH)/$(t)-$(VERSION))
 mingwt		:= i686-pc-mingw32
 mingws		:= $(foreach t,$(mtargets),builds/$(mingwt)/$(t)-$(VERSION)_setup.exe)
 
-tarballs	:= builds/$(distrib)/$(build)-$(VERSION).tar.bz2
-tarballs	+= $(foreach t,$(targets),builds/$(distrib)/$(t)-$(VERSION).tar.bz2)
+tarballs	:= builds/$(distrib)/$(build)-$(VERSION).tar.xz
+tarballs	+= $(foreach t,$(targets),builds/$(distrib)/$(t)-$(VERSION).tar.xz)
 
 toclean		:= $(foreach t,$(targets),/tmp/build-$(t)-$(vbase).log)
 toclean		+= $(foreach t,$(targets),build-$(t)-$(vbase))
@@ -148,14 +148,14 @@ $(mingws): scripts/build-$$(subst -$(VERSION)_setup.exe,,$$(@F))-$(vbase)-mingw.
 	@mkdir -p $(@D)
 	@echo ""
 
-$(tarballs): $(BASEPATH)/$$(subst .tar.bz2,,$$(@F))
+$(tarballs): $(BASEPATH)/$$(subst .tar.xz,,$$(@F))
 	$(eval tar := $(abspath $@))
 	@echo "======================================================================="
 	@echo "= TARGET: $@"
 	@echo "======================================================================="
 	@mkdir -p $(@D)
 	@echo -n "Archiving $^ "
-	@cd $(BASEPATH); tar -cjf $(tar) $(<F) 2>/dev/null
+	@cd $(BASEPATH); tar -cJf $(tar) $(<F) 2>/dev/null
 	@echo "Done"
 	@echo ""
 
