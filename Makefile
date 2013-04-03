@@ -39,7 +39,8 @@ space		+=
 
 boards_dir	:= $(or $(realpath $(BOARDS_DIR)), $(cdir)/boards)
 programs_dir	:= $(or $(realpath $(PROGRAMS_DIR)), $(cdir)/programs)
-build_dir	:= $(or $(realpath $(BUILD_DIR)), $(realpath $(programs_dir)/..)/builds)/$(P)/$(B)
+BUILD_DIR	:= $(or $(realpath $(BUILD_DIR)), $(realpath $(programs_dir)/..)/builds)
+build_dir	:= $(BUILD_DIR)/$(P)/$(B)
 toolchain	:= $(or $(realpath $(TOOLCHAIN)), /opt/x-tools)
 
 # Test if P and B exist
@@ -61,7 +62,7 @@ Optional arguments:
 
   PROGRAMS_DIR  : base path of programs (current: $(programs_dir))
   BOARDS_DIR    : base path of boards (current: $(boards_dir))
-  BUILD_DIR     : base path for build objects (current: $(build_dir))
+  BUILD_DIR     : base path for build objects (current: $(BUILD_DIR))
   TOOLCHAIN     : base path of installed toolchain (current: $(toolchain))
 
 Rules:
