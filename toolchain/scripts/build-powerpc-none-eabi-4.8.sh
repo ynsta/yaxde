@@ -9,7 +9,7 @@ GCCARCH=
 
 # =====================================================================
 # Used packages
-GCC=gcc-4.8.0
+GCC=gcc-4.8.1
 NEWLIB=newlib-2.0.0
 NEWLIBNANO=newlib-nano-1.0
 BINUTILS=binutils-2.23.1
