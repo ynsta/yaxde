@@ -27,7 +27,7 @@
 
 # set TARGETS to build
 ifeq ($(TARGETS),)
-targets		:= mxe arm-none-eabi m68k-none-elf powerpc-none-eabi stlink qemu
+targets		:= mxe arm-none-eabi m68k-none-elf powerpc-none-eabi tools
 else
 targets		:= $(TARGETS)
 endif
