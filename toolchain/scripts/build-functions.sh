@@ -250,7 +250,7 @@ function download()
 		chmod +x $(egrep -rl '^#!' ${file})
 		tar cjf ${file}{.tar.bz2,}
 		rm -rf ${file}
-		md5sum ${file}.tar.bz2 > ${file}.md5
+		md5sum ${file}.tar.bz2 > ${file}.tar.bz2.md5
 		;;
 	esac
     done
@@ -294,27 +294,18 @@ function build-mxe() {
 	    http://www.mpfr.org/mpfr-current/${MPFR}.tar.xz \
 	    http://www.multiprecision.org/mpc/download/${MPC}.tar.gz
 
-	mkdir -p pkg
-	cp -rvf ${PKGDIR}/w32api-3.17-2-mingw32-dev.tar.lzma pkg
-	cp -rvf ${PKGDIR}/mingwrt-3.20-2-mingw32-dev.tar.lzma pkg
-	cp -rvf ${PKGDIR}/binutils-2.23.1.tar.bz2 pkg
-	cp -rvf ${PKGDIR}/gcc-4.8.0.tar.bz2 pkg
-	cp -rvf ${PKGDIR}/gmp-5.1.1.tar.bz2 pkg
-	cp -rvf ${PKGDIR}/mpfr-3.1.2.tar.xz pkg
-	cp -rvf ${PKGDIR}/mpc-1.0.1.tar.gz pkg
-	cp -rvf ${PKGDIR}/zlib-1.2.7.tar.bz2 pkg
-	cp -rvf ${PKGDIR}/expat-2.1.0.tar.gz pkg
-	cp -rvf ${PKGDIR}/libftdi-0.20.tar.gz pkg
-	cp -rvf ${PKGDIR}/libusb-win32-src-1.2.6.0.zip pkg
+	ln -s ${PKGDIR} pkg
 
-	make gcc     || error
-	make zlib    || error
-	make expat   || error
-	make libusb  || error
-	make libftdi || error
+	make gcc      || error
+	make zlib     || error
+	make expat    || error
+	make libusb   || error
+	make libftdi  || error
+	make readline || error
+	#make ncurses  || error
 
 	rm -rf log
-	rm -rf pkg
+	rm -f pkg
 
 	export PATH=${BASEPATH}/mxe-${VERSION}/usr/bin:${PATH}
 
@@ -574,11 +565,6 @@ ${GCCEXTRACFG}"
 	if [ ${CB_MINGW} -eq 1 ]; then
 
 	    coptions="${coptions} --with-build-time-tools=${BPREFIX}/bin"
-
-	    if [ $VGCC_MAJOR -lt 4 ]; then
-		coptions="${coptions} --with-as=${PREFIX}/bin/${TARGET}-as.exe"
-		coptions="${coptions} --with-ld=${PREFIX}/bin/${TARGET}-ld.exe"
-	    fi
 	fi
 
 
@@ -844,10 +830,6 @@ ${GCCEXTRACFG}"
 
 	    if [ ${CB_MINGW} -eq 1 ]; then
 		coptions_gccX+=" --with-build-time-tools=${BPREFIX}/bin"
-		if [ $VGCC_MAJOR -lt 4 ]; then
-		    coptions_gccX+=" --with-as=${PREFIX}/bin/${TARGET}-as.exe"
-		    coptions_gccX+=" --with-ld=${PREFIX}/bin/${TARGET}-ld.exe"
-		fi
 	    fi
 
 	    coptions_gcc1="${coptions_gccX} \

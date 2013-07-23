@@ -8,18 +8,6 @@ TARGET=arm-none-eabi
 #GCCARCH=armv7-m
 
 # =====================================================================
-# Used packages
-GCC=gcc-4.8.1
-NEWLIB=newlib-2.0.0
-NEWLIBNANO=newlib-nano-1.0
-BINUTILS=binutils-2.23.1
-GDB=gdb-7.5.1
-GMP=gmp-5.1.1
-MPFR=mpfr-3.1.2
-MPC=mpc-1.0.1
-EXPAT=expat-2.1.0
-
-# =====================================================================
 # Options
 
 # Set to 1 to build GDB with python support
@@ -41,6 +29,7 @@ SCRIPT_NAME="$(basename $0)"
 
 # =====================================================================
 
+. "${SCRIPT_DIR}/build-versions.sh"
 . "${SCRIPT_DIR}/build-functions.sh"
 
 # =====================================================================

@@ -21,6 +21,7 @@ case $install in
 	apt-get -y install python python-dev
 	apt-get -y install libusb-dev
 	apt-get -y install libusb-1.0-0-dev
+	apt-get -y isntall libgtk-3-dev
 	apt-get -y install gnat
 	apt-get -y install libisl-dev
 	gnatv=$(gnat | grep '^GNAT 4.' | awk '{ print $2 }' | awk -F. '{print $1"."$2}')
@@ -40,7 +41,7 @@ case $install in
     */yum)
 	yum install -y nsis yasm git-all yum-utils checkinstall \
 	    libusb1-devel gcc gcc-gnat python-devel xz \
-	    autoconf automake gawk m4 sed tar bunzip
+	    autoconf automake gawk m4 sed tar bunzip gtk3-devel
 	yum-builddep -y gcc gcc-gnat gdb binutils
 	;;
 esac

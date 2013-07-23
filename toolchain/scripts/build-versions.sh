@@ -1,0 +1,12 @@
+GCC=gcc-4.8.1
+NEWLIB=newlib-2.0.0
+NEWLIBNANO=newlib-nano-1.0
+BINUTILS=binutils-2.23.2
+GDB=gdb-7.6
+GMP=gmp-5.1.2
+MPFR=mpfr-3.1.2
+MPC=mpc-1.0.1
+EXPAT=expat-2.1.0
+MXE=8ff8097dbd0db15fa6968118ae1af5d539094d41
+QEMU=qemu-linaro-1.5.0-2013.06
+LIBUSB=libusb-1.0.9

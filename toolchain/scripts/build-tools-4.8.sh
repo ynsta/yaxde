@@ -4,14 +4,13 @@
 TARGET=tools
 
 # =====================================================================
-QEMU=qemu-linaro-1.5.0-2013.06
-# =====================================================================
 
 SCRIPT_DIR="$(dirname $0)"
 SCRIPT_NAME="$(basename $0)"
 
 # =====================================================================
 
+. "${SCRIPT_DIR}/build-versions.sh"
 . "${SCRIPT_DIR}/build-functions.sh"
 
 # =====================================================================
@@ -39,7 +38,7 @@ if [ ! -d "${OBJDIR}"/stlink-${BUILDSUFFIX} ]; then
     ./autogen.sh >> "${LOG}" 2>&1
     cd - &>/dev/null
 
-    "${SRCDIR}"/stlink/configure --prefix=${PREFIX} >> "${LOG}" 2>&1
+    "${SRCDIR}"/stlink/configure --with-gtk --prefix=${PREFIX} >> "${LOG}" 2>&1
 
     make         >> "${LOG}" 2>&1
     make install >> "${LOG}" 2>&1
