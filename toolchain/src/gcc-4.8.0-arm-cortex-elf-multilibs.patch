@@ -1,7 +1,7 @@
-From eb081da4534386e8d531cfea62e3b02096a9b95c Mon Sep 17 00:00:00 2001
+From 1cc69290ef16bf82a8f73fc4e8e9e1c079bf1ead Mon Sep 17 00:00:00 2001
 From: Stany MARCEL <stanypub@gmail.com>
 Date: Tue, 19 Mar 2013 00:29:44 +0100
-Subject: [PATCH 2/2] Add Multilib config for ARM Cortex MCU & CPU
+Subject: [PATCH] Add Multilib config for ARM Cortex MCU & CPU
 
 Configure gcc with --with-multilib-list=pattern1,...,patternN to select which
 multilib to build.
@@ -11,7 +11,7 @@ Accepted patterns:
   armv6s-m armv6-m cortex-m0 cortex-m0plus cortex-m1
   armv7-m cortex-m3
   armv7e-m cortex-m4
-  armv7 armv7-r cortex-r*
+  armv7-r cortex-r*
   armv7-a cortex-a* neon
 
   arm or no-thumb to enable arm multilibs for Cortex-R and Cortex-A
@@ -20,15 +20,15 @@ Accepted patterns:
 
 Signed-off-by: Stany MARCEL <stanypub@gmail.com>
 ---
- gcc/Makefile.in          |    1 +
- gcc/config/arm/elf.h     |    5 +-
- gcc/config/arm/t-arm-elf |  206 ++++++++++++++++++++++++++++++----------------
- gcc/configure            |    8 +-
- gcc/configure.ac         |    3 +-
- 5 files changed, 143 insertions(+), 80 deletions(-)
+ gcc/Makefile.in          |   1 +
+ gcc/config/arm/elf.h     |   5 +-
+ gcc/config/arm/t-arm-elf | 209 +++++++++++++++++++++++++++++++----------------
+ gcc/configure            |   8 +-
+ gcc/configure.ac         |   3 +-
+ 5 files changed, 146 insertions(+), 80 deletions(-)
 
 diff --git a/gcc/Makefile.in b/gcc/Makefile.in
-index 54ea04f..d5bbf02 100644
+index 4b04d64..10fec32 100644
 --- a/gcc/Makefile.in
 +++ b/gcc/Makefile.in
 @@ -526,6 +526,7 @@ lang_opt_files=@lang_opt_files@ $(srcdir)/c-family/c.opt $(srcdir)/common.opt
@@ -56,7 +56,7 @@ index 5e21a08..6b2c42a 100644
  #define TARGET_ASM_FILE_START_APP_OFF true
  #define TARGET_ASM_FILE_START_FILE_DIRECTIVE true
 diff --git a/gcc/config/arm/t-arm-elf b/gcc/config/arm/t-arm-elf
-index 60747d3..939a95e 100644
+index 60747d3..32a6603 100644
 --- a/gcc/config/arm/t-arm-elf
 +++ b/gcc/config/arm/t-arm-elf
 @@ -1,3 +1,4 @@
@@ -64,7 +64,7 @@ index 60747d3..939a95e 100644
  # Copyright (C) 1998-2013 Free Software Foundation, Inc.
  #
  # This file is part of GCC.
-@@ -16,75 +17,136 @@
+@@ -16,75 +17,139 @@
  # along with GCC; see the file COPYING3.  If not see
  # <http://www.gnu.org/licenses/>.
  
@@ -170,14 +170,17 @@ index 60747d3..939a95e 100644
 +MULTILIB_OPTIONS     := marm/mthumb
 +MULTILIB_DIRNAMES    := arm thumb
 +
-+MULTILIB_OPTIONS     += march=armv6s-m/march=armv7-m/march=armv7e-m/march=armv7/march=armv7-a
-+MULTILIB_DIRNAMES    += armv6s-m armv7-m armv7e-m armv7 armv7-a
++MULTILIB_OPTIONS     += march=armv6s-m/march=armv7-m/march=armv7e-m/march=armv7-r/march=armv7-a
++MULTILIB_DIRNAMES    += armv6s-m armv7-m armv7e-m armv7-r armv7-a
 +
 +MULTILIB_OPTIONS     += mfloat-abi=soft/mfloat-abi=softfp/mfloat-abi=hard
 +MULTILIB_DIRNAMES    += soft softfp hard
 +
 +MULTILIB_OPTIONS     += mfpu=fpv4-sp-d16/mfpu=vfpv3-d16/mfpu=neon
 +MULTILIB_DIRNAMES    += fpv4-sp-d16 vfpv3-d16 neon
++
++MULTILIB_OPTIONS     += mno-thumb-interwork/mthumb-interwork
++MULTILIB_DIRNAMES    += no-interwork interwork
 +
 +MULTILIB_MATCHES     := marm=mno-thumb
 +
@@ -190,10 +193,9 @@ index 60747d3..939a95e 100644
 +
 +MULTILIB_MATCHES     += march?armv7e-m=mcpu?cortex-m4
 +
-+MULTILIB_MATCHES     += march?armv7=march?armv7-r
-+MULTILIB_MATCHES     += march?armv7=mcpu?cortex-r4
-+MULTILIB_MATCHES     += march?armv7=mcpu?cortex-r4f
-+MULTILIB_MATCHES     += march?armv7=mcpu?cortex-r5
++MULTILIB_MATCHES     += march?armv7-r=mcpu?cortex-r4
++MULTILIB_MATCHES     += march?armv7-r=mcpu?cortex-r4f
++MULTILIB_MATCHES     += march?armv7-r=mcpu?cortex-r5
 +
 +MULTILIB_MATCHES     += march?armv7-a=mcpu?cortex-a5
 +MULTILIB_MATCHES     += march?armv7-a=mcpu?cortex-a7
@@ -214,67 +216,68 @@ index 60747d3..939a95e 100644
 +
 +# Cortex M0 & M1
 +ifneq ($(mlibs), $(filter-out all armv6-m armv6s-m cortex-m0 cortex-m0plus cortex-m1, $(mlibs)))
-+MULTILIB_REQUIRED    += mthumb/march=armv6s-m/mfloat-abi=soft
-+MULTILIB_OSDIRNAMES  += mthumb/march.armv6s-m/mfloat-abi.soft=!armv6s-m
++MULTILIB_REQUIRED    += mthumb/march=armv6s-m/mfloat-abi=soft/mno-thumb-interwork
++MULTILIB_OSDIRNAMES  += mthumb/march.armv6s-m/mfloat-abi.soft/mno-thumb-interwork=!armv6s-m
 +endif
 +
 +# Cortex M3
 +ifneq ($(mlibs), $(filter-out all armv7-m cortex-m3, $(mlibs)))
-+MULTILIB_REQUIRED    += mthumb/march=armv7-m/mfloat-abi=soft
-+MULTILIB_OSDIRNAMES  += mthumb/march.armv7-m/mfloat-abi.soft=!armv7-m
++MULTILIB_REQUIRED    += mthumb/march=armv7-m/mfloat-abi=soft/mno-thumb-interwork
++MULTILIB_OSDIRNAMES  += mthumb/march.armv7-m/mfloat-abi.soft/mno-thumb-interwork=!armv7-m
 +endif
 +
 +# Cortex M4
 +ifneq ($(mlibs), $(filter-out all armv7e-m cortex-m4, $(mlibs)))
-+MULTILIB_REQUIRED    += mthumb/march=armv7e-m/mfloat-abi=soft
-+MULTILIB_OSDIRNAMES  += mthumb/march.armv7e-m/mfloat-abi.soft=!armv7e-m/soft
-+MULTILIB_REQUIRED    += mthumb/march=armv7e-m/mfloat-abi=softfp/mfpu=fpv4-sp-d16
-+MULTILIB_OSDIRNAMES  += mthumb/march.armv7e-m/mfloat-abi.softfp/mfpu.fpv4-sp-d16=!armv7e-m/softfp
-+MULTILIB_REQUIRED    += mthumb/march=armv7e-m/mfloat-abi=hard/mfpu=fpv4-sp-d16
-+MULTILIB_OSDIRNAMES  += mthumb/march.armv7e-m/mfloat-abi.hard/mfpu.fpv4-sp-d16=!armv7e-m/hard
++MULTILIB_REQUIRED    += mthumb/march=armv7e-m/mfloat-abi=soft/mno-thumb-interwork
++MULTILIB_OSDIRNAMES  += mthumb/march.armv7e-m/mfloat-abi.soft/mno-thumb-interwork=!armv7e-m/soft
++MULTILIB_REQUIRED    += mthumb/march=armv7e-m/mfloat-abi=softfp/mfpu=fpv4-sp-d16/mno-thumb-interwork
++MULTILIB_OSDIRNAMES  += mthumb/march.armv7e-m/mfloat-abi.softfp/mfpu.fpv4-sp-d16/mno-thumb-interwork=!armv7e-m/softfp
++MULTILIB_REQUIRED    += mthumb/march=armv7e-m/mfloat-abi=hard/mfpu=fpv4-sp-d16/mno-thumb-interwork
++MULTILIB_OSDIRNAMES  += mthumb/march.armv7e-m/mfloat-abi.hard/mfpu.fpv4-sp-d16/mno-thumb-interwork=!armv7e-m/hard
 +endif
 +
-+ifneq ($(mlibs), $(filter-out all armv7 armv7-r cortex-r%, $(mlibs)))
++
++ifneq ($(mlibs), $(filter-out all armv7-r cortex-r%, $(mlibs)))
 +# Cortex R (thumb)
-+MULTILIB_REQUIRED    += mthumb/march=armv7/mfloat-abi=soft
-+MULTILIB_OSDIRNAMES  += mthumb/march.armv7/mfloat-abi.soft=!armv7/soft
-+MULTILIB_REQUIRED    += mthumb/march=armv7/mfloat-abi=softfp/mfpu=vfpv3-d16
-+MULTILIB_OSDIRNAMES  += mthumb/march.armv7/mfloat-abi.softfp/mfpu.vfpv3-d16=!armv7/softfp
-+MULTILIB_REQUIRED    += mthumb/march=armv7/mfloat-abi=hard/mfpu=vfpv3-d16
-+MULTILIB_OSDIRNAMES  += mthumb/march.armv7/mfloat-abi.hard/mfpu.vfpv3-d16=!armv7/hard
++MULTILIB_REQUIRED    += mthumb/march=armv7-r/mfloat-abi=soft/mno-thumb-interwork
++MULTILIB_OSDIRNAMES  += mthumb/march.armv7-r/mfloat-abi.soft/mno-thumb-interwork=!armv7-r/thumb/soft
++MULTILIB_REQUIRED    += mthumb/march=armv7-r/mfloat-abi=softfp/mfpu=vfpv3-d16/mno-thumb-interwork
++MULTILIB_OSDIRNAMES  += mthumb/march.armv7-r/mfloat-abi.softfp/mfpu.vfpv3-d16/mno-thumb-interwork=!armv7-r/thumb/softfp
++MULTILIB_REQUIRED    += mthumb/march=armv7-r/mfloat-abi=hard/mfpu=vfpv3-d16/mno-thumb-interwork
++MULTILIB_OSDIRNAMES  += mthumb/march.armv7-r/mfloat-abi.hard/mfpu.vfpv3-d16/mno-thumb-interwork=!armv7-r/thumb/hard
 +ifneq ($(mlibs), $(filter-out arm no-thumb, $(mlibs)))
 +# Cortex R (arm)
-+MULTILIB_REQUIRED    += marm/march=armv7/mfloat-abi=soft
-+MULTILIB_OSDIRNAMES  += marm/march.armv7/mfloat-abi.soft=!armv7/soft/arm
-+MULTILIB_REQUIRED    += marm/march=armv7/mfloat-abi=softfp/mfpu=vfpv3-d16
-+MULTILIB_OSDIRNAMES  += marm/march.armv7/mfloat-abi.softfp/mfpu.vfpv3-d16=!armv7/softfp/arm
-+MULTILIB_REQUIRED    += marm/march=armv7/mfloat-abi=hard/mfpu=vfpv3-d16
-+MULTILIB_OSDIRNAMES  += marm/march.armv7/mfloat-abi.hard/mfpu.vfpv3-d16=!armv7/hard/arm
++MULTILIB_REQUIRED    += marm/march=armv7-r/mfloat-abi=soft/mthumb-interwork
++MULTILIB_OSDIRNAMES  += marm/march.armv7-r/mfloat-abi.soft/mthumb-interwork=!armv7-r/arm/soft
++MULTILIB_REQUIRED    += marm/march=armv7-r/mfloat-abi=softfp/mfpu=vfpv3-d16/mthumb-interwork
++MULTILIB_OSDIRNAMES  += marm/march.armv7-r/mfloat-abi.softfp/mfpu.vfpv3-d16/mthumb-interwork=!armv7-r/arm/softfp
++MULTILIB_REQUIRED    += marm/march=armv7-r/mfloat-abi=hard/mfpu=vfpv3-d16/mthumb-interwork
++MULTILIB_OSDIRNAMES  += marm/march.armv7-r/mfloat-abi.hard/mfpu.vfpv3-d16/mthumb-interwork=!armv7-r/arm/hard
 +endif
 +endif
 +
 +ifneq ($(mlibs), $(filter-out all armv7-a cortex-a%, $(mlibs)))
 +# Cortex A (thumb)
-+MULTILIB_REQUIRED    += mthumb/march=armv7-a/mfloat-abi=soft
-+MULTILIB_OSDIRNAMES  += mthumb/march.armv7-a/mfloat-abi.soft=!armv7-a/soft
-+MULTILIB_REQUIRED    += mthumb/march=armv7-a/mfloat-abi=softfp/mfpu=neon
-+MULTILIB_OSDIRNAMES  += mthumb/march.armv7-a/mfloat-abi.softfp/mfpu.neon=!armv7-a/softfp
-+MULTILIB_REQUIRED    += mthumb/march=armv7-a/mfloat-abi=hard/mfpu=neon
-+MULTILIB_OSDIRNAMES  += mthumb/march.armv7-a/mfloat-abi.hard/mfpu.neon=!armv7-a/hard
++MULTILIB_REQUIRED    += mthumb/march=armv7-a/mfloat-abi=soft/mno-thumb-interwork
++MULTILIB_OSDIRNAMES  += mthumb/march.armv7-a/mfloat-abi.soft/mno-thumb-interwork=!armv7-a/thumb/soft
++MULTILIB_REQUIRED    += mthumb/march=armv7-a/mfloat-abi=softfp/mfpu=neon/mno-thumb-interwork
++MULTILIB_OSDIRNAMES  += mthumb/march.armv7-a/mfloat-abi.softfp/mfpu.neon/mno-thumb-interwork=!armv7-a/thumb/softfp
++MULTILIB_REQUIRED    += mthumb/march=armv7-a/mfloat-abi=hard/mfpu=neon/mno-thumb-interwork
++MULTILIB_OSDIRNAMES  += mthumb/march.armv7-a/mfloat-abi.hard/mfpu.neon/mno-thumb-interwork=!armv7-a/thumb/hard
 +ifneq ($(mlibs), $(filter-out arm no-thumb, $(mlibs)))
 +# Cortex A (arm)
-+MULTILIB_REQUIRED    += marm/march=armv7-a/mfloat-abi=soft
-+MULTILIB_OSDIRNAMES  += marm/march.armv7-a/mfloat-abi.soft=!armv7-a/soft/arm
-+MULTILIB_REQUIRED    += marm/march=armv7-a/mfloat-abi=softfp/mfpu=neon
-+MULTILIB_OSDIRNAMES  += marm/march.armv7-a/mfloat-abi.softfp/mfpu.neon=!armv7-a/softfp/arm
-+MULTILIB_REQUIRED    += marm/march=armv7-a/mfloat-abi=hard/mfpu=neon
-+MULTILIB_OSDIRNAMES  += marm/march.armv7-a/mfloat-abi.hard/mfpu.neon=!armv7-a/hard/arm
++MULTILIB_REQUIRED    += marm/march=armv7-a/mfloat-abi=soft/mthumb-interwork
++MULTILIB_OSDIRNAMES  += marm/march.armv7-a/mfloat-abi.soft/mthumb-interwork=!armv7-a/arm/soft
++MULTILIB_REQUIRED    += marm/march=armv7-a/mfloat-abi=softfp/mfpu=neon/mthumb-interwork
++MULTILIB_OSDIRNAMES  += marm/march.armv7-a/mfloat-abi.softfp/mfpu.neon/mthumb-interwork=!armv7-a/arm/softfp
++MULTILIB_REQUIRED    += marm/march=armv7-a/mfloat-abi=hard/mfpu=neon/mthumb-interwork
++MULTILIB_OSDIRNAMES  += marm/march.armv7-a/mfloat-abi.hard/mfpu.neon/mthumb-interwork=!armv7-a/arm/hard
 +endif
 +endif
 +
 +MULTILIB_EXCEPTIONS  :=
 diff --git a/gcc/configure b/gcc/configure
-index e12a180..171c638 100755
+index feb9a5e..c7f7946 100755
 --- a/gcc/configure
 +++ b/gcc/configure
 @@ -753,6 +753,7 @@ LN
@@ -321,7 +324,7 @@ index e12a180..171c638 100755
  
  #if HAVE_DLFCN_H
 diff --git a/gcc/configure.ac b/gcc/configure.ac
-index eba3577..d8c92ec 100644
+index 35a42d1..9811ab2 100644
 --- a/gcc/configure.ac
 +++ b/gcc/configure.ac
 @@ -839,9 +839,10 @@ esac],
@@ -337,5 +340,5 @@ index eba3577..d8c92ec 100644
  # -------------------------
  # Checks for other programs
 -- 
-1.7.10.4
+1.8.1.2
 

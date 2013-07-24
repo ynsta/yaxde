@@ -346,6 +346,7 @@ function build-binutils() {
 --build=${BUILD} \
 --disable-nls \
 --disable-shared \
+--enable-interwork \
 ${MULTILIB}"
 
  	    [ ! -z "${GCCCPU}"  ]  && coptions+=" --with-cpu=${GCCCPU}"
@@ -471,7 +472,8 @@ function build-newlibnano() {
 --disable-werror \
 --disable-newlib-supplied-syscalls \
 --enable-newlib-reent-small \
---disable-nls"
+--disable-nls \
+--enable-interwork"
 
 	    "${SRCDIR}"/${NEWLIBNANO}/configure ${coptions_newlib} >> "${LOG}" 2>&1 || error
 
@@ -608,7 +610,8 @@ ${GCCEXTRACFG}"
 --disable-newlib-supplied-syscalls \
 --enable-newlib-io-long-long \
 --enable-newlib-register-fini \
---disable-nls"
+--disable-nls \
+--enable-interwork"
 
 	    [ ! -z "${GCCCPU}"  ] && coptions_newlib+=" --with-cpu=${GCCCPU}"
 	    [ ! -z "${GCCARCH}" ] && coptions_newlib+=" --with-arch=${GCCARCH}"

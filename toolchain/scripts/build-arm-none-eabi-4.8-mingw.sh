@@ -18,8 +18,8 @@ GDBPYTHON=0
 LANGUAGES="c,c++,ada"
 
 GCCEXTRACFG=" \
---with-mode=thumb \
---with-multilib-list=all"
+--enable-interwork \
+--with-multilib-list=all,arm"
 
 MULTILIB=1
 
