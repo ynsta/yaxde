@@ -16,7 +16,7 @@ case $install in
 	apt-get -y install nsis
 	apt-get -y install checkinstall
 	apt-get -y install build-essential git-all
-	apt-get -y install autoconf automake gawk m4 sed
+	apt-get -y install autoconf automake autopoint gawk m4 sed
 	apt-get -y install wget tar gzip bzip2 lzop
 	apt-get -y install python python-dev
 	apt-get -y install libusb-dev
@@ -41,7 +41,7 @@ case $install in
     */yum)
 	yum install -y nsis yasm git-all yum-utils checkinstall \
 	    libusb1-devel gcc gcc-gnat python-devel xz \
-	    autoconf automake gawk m4 sed tar bunzip gtk3-devel
+	    autoconf automake autopoint gawk m4 sed tar bunzip gtk3-devel
 	yum-builddep -y gcc gcc-gnat gdb binutils
 	;;
 esac

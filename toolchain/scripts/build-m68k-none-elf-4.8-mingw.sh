@@ -39,12 +39,12 @@ build-env
 BINUTILS_PATCHES=""
 
 GCC_PATCHES="\
-${PKGDIR}/gcc-4.8.0-ada_bare_board.patch \
-${PKGDIR}/gcc-4.8.0-xgnatugn-canadian.patch \
-${PKGDIR}/gcc-4.8.0-fix-gnatools-canadian.patch"
+${PKGDIR}/gcc-4.8.3-ada_bare_board.patch \
+"
 
 NEWLIB_PATCHES="\
-${PKGDIR}/newlib-2.0.0-fix-compilation-with-armv6s-m.patch"
+${PKGDIR}/newlib-2.1.0-correct-read-write-prototype-for-m68k.patch \
+"
 
 GDB_PATCHES=""
 
@@ -61,7 +61,7 @@ build-binutils ${BINUTILS_PATCHES}
 build-gcc ${GCC_PATCHES}
 build-expat
 build-gdb ${GDB_PATCHES}
-build-newlibnano
+build-newlibnano ${NEWLIB_PATCHES}
 # =====================================================================
 remove-srcdirs
 # =====================================================================

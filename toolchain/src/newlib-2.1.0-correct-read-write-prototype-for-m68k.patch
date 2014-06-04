@@ -1,0 +1,40 @@
+From 813e057eaad4e6733390927e1c59fbcb548a486f Mon Sep 17 00:00:00 2001
+From: Stany MARCEL <stanypub@gmail.com>
+Date: Tue, 3 Jun 2014 22:19:29 +0200
+Subject: [PATCH] Correct read/write prototype for m68k
+
+Signed-off-by: Stany MARCEL <stanypub@gmail.com>
+---
+ libgloss/m68k/io-read.c  | 2 +-
+ libgloss/m68k/io-write.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/libgloss/m68k/io-read.c b/libgloss/m68k/io-read.c
+index 2cf3555..ffaab15 100644
+--- a/libgloss/m68k/io-read.c
++++ b/libgloss/m68k/io-read.c
+@@ -30,7 +30,7 @@
+  *   1 : errno
+  */
+ 
+-ssize_t read (int fd, void *buf, size_t count)
++int read (int fd, void *buf, size_t count)
+ {
+ #if HOSTED
+   gdb_parambuf_t parameters;
+diff --git a/libgloss/m68k/io-write.c b/libgloss/m68k/io-write.c
+index bf4b776..4742d85 100644
+--- a/libgloss/m68k/io-write.c
++++ b/libgloss/m68k/io-write.c
+@@ -30,7 +30,7 @@
+  *   1 : errno
+  */
+ 
+-ssize_t write (int fd, const void *buf, size_t count)
++int write (int fd, const void *buf, size_t count)
+ {
+ #if HOSTED
+   gdb_parambuf_t parameters;
+-- 
+1.8.3.2
+

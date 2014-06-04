@@ -210,7 +210,7 @@ function untar() {
 
 function apatch()
 {
-    cd "$1"
+    pushd "$1" &>/dev/null
     shift
     for p; do
 	echo -n "Applying $(basename ${p}) "
@@ -218,12 +218,13 @@ function apatch()
 	patch -p 1 < "${p}" >> "${LOG}" 2>&1 || error
 	echo "Done"
     done
-    cd - &>/dev/null
+    popd &>/dev/null
 }
 
 function download()
 {
-    cd ${PKGDIR}
+
+    pushd ${PKGDIR}
     for url; do
 	file=${url##*/}
 	ext=${file##*.}
@@ -239,22 +240,74 @@ function download()
 		md5sum ${file} > ${file}.md5
 		;;
 	    git)
-		file=${file%.git}
-		if [ -f ${file}.tar.bz2 ]; then
-		    [ ! -f ${file}.tar.bz2.md5  ] && \
-			md5sum ${file}.tar.bz2 > ${file}.tar.bz2.md5
-		    md5sum -c ${file}.tar.bz2.md5 && continue
+		rev=$2
+		shift
+		file=${file%.git}-${rev}
+		if [ -f ${file}.tar.xz ]; then
+		    [ ! -f ${file}.tar.xz.md5  ] && \
+			md5sum ${file}.tar.xz > ${file}.tar.xz.md5
+		    md5sum -c ${file}.tar.xz.md5 && continue
 		    rm ${file}
 		fi
-		git clone --depth=1 ${url} || error
-		chmod +x $(egrep -rl '^#!' ${file})
-		tar cjf ${file}{.tar.bz2,}
+		git clone ${url} ${file} || error
+		cd ${file} || error
+		# get wanted rev
+		git checkout ${rev} -b x-tools || error
+		# set 755 all executables
+		chmod 755 $(find . -type f -exec file {} + | grep 'executable' | cut -d : -f 1)
+		cd - &> /dev/null
+		XZ_OPT=-9e tar cJf ${file}{.tar.xz,}
 		rm -rf ${file}
-		md5sum ${file}.tar.bz2 > ${file}.tar.bz2.md5
+		md5sum ${file}.tar.xz > ${file}.tar.xz.md5
 		;;
 	esac
     done
-    cd - &> /dev/null
+    popd &> /dev/null
+}
+
+function download-git()
+{
+    pushd ${PKGDIR}
+
+    url="$1"
+    pref="$2"
+    file="$2.tar.xz"
+
+    if [ -f "${file}" ]; then
+	[ ! -f "${file}".md5  ] && md5sum "${file}" > "${file}".md5
+	md5sum -c "${file}".md5 && popd &> /dev/null && return
+	rm "${file}"
+    fi
+
+    git clone "${url}" "${pref}"
+    XZ_OPT=-9e tar cJf "${file}" "${pref}"
+    rm -rf "${pref}"
+    md5sum "${file}" > "${file}".md5
+
+    popd &> /dev/null
+}
+
+
+function download-svn()
+{
+    pushd ${PKGDIR}
+
+    url="$1"
+    pref="$2"
+    file="$2.tar.xz"
+
+    if [ -f "${file}" ]; then
+	[ ! -f "${file}".md5  ] && md5sum "${file}" > "${file}".md5
+	md5sum -c "${file}".md5 && popd &> /dev/null && return
+	rm "${file}"
+    fi
+
+    svn export "${url}" "${pref}"
+    XZ_OPT=-9e tar cJf "${file}" "${pref}"
+    rm -rf "${pref}"
+    md5sum "${file}" > "${file}".md5
+
+    popd &> /dev/null
 }
 
 # = MXE ===============================================================
@@ -274,13 +327,13 @@ function build-mxe() {
 
 	cd ${BASEPATH}
 
-	if [ ! -f ${PKGDIR}/mxe-${MXE}.tar.bz2 ]; then
+	if [ ! -f ${PKGDIR}/mxe-${MXE}.tar.xz ]; then
 	    git clone -b master https://github.com/mxe/mxe.git
-	    mv mxe mxe-${VERSION}
-	    tar cjf ${PKGDIR}/mxe-${MXE}.tar.bz2 mxe-${VERSION}
+	    XZ_OPT=-9e tar cJf ${PKGDIR}/mxe-${MXE}.tar.xz mxe
 	else
-	    tar xf ${PKGDIR}/mxe-${MXE}.tar.bz2
+	    tar xf ${PKGDIR}/mxe-${MXE}.tar.xz
 	fi
+	mv mxe mxe-${VERSION}
 
 	cd mxe-${VERSION} || error
 
@@ -302,7 +355,6 @@ function build-mxe() {
 	make libusb   || error
 	make libftdi  || error
 	make readline || error
-	#make ncurses  || error
 
 	rm -rf log
 	rm -f pkg
@@ -450,7 +502,7 @@ function build-newlibnano() {
     if [ ! -z ${NEWLIBNANO} ]; then
 	head "build-newlibnano: preparations"
 
-	download git://github.com/32bitmicro/${NEWLIBNANO}.git
+	download git://github.com/32bitmicro/${NEWLIBNANO%-*}.git ${NEWLIBNANO##*-}
 
 	pushd . &>/dev/null
 
@@ -458,6 +510,11 @@ function build-newlibnano() {
 	    untar ${PKGDIR}/${NEWLIBNANO}.tar.* || error
 	    apatch ${SRCDIR}/${NEWLIBNANO} "$@"
 	fi
+
+	# Fix executable mode for scripts
+	cd ${SRCDIR}/${NEWLIBNANO}
+
+
 	foot
 
 	if [ ! -d "${OBJDIR}"/${NEWLIBNANO}-${BUILDSUFFIX} ]; then

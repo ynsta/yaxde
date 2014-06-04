@@ -1,7 +1,7 @@
-From ae22a611e2dd0f6fbbe6461315c0d8f5cbda91e9 Mon Sep 17 00:00:00 2001
+From 154eeb3137a2e19f83f5eefa31e69354364b7be9 Mon Sep 17 00:00:00 2001
 From: Stany MARCEL <stanypub@gmail.com>
-Date: Mon, 18 Mar 2013 10:20:30 +0100
-Subject: [PATCH] Add Ada gnat* compilation for some elf bare board systems
+Date: Tue, 3 Jun 2014 10:13:00 +0200
+Subject: [PATCH 2/2] Add Ada gnat* compilation for some elf bare board systems
 
 Provide specifics system.ads and implements required stub in gnatlibs for the
 following bare-board, newlib based, targets:
@@ -19,25 +19,25 @@ building with a newlib configured with --disable-newlib-supplied-syscalls
 
 Signed-off-by: Stany MARCEL <stanypub@gmail.com>
 ---
- gcc/ada/adaint.c                   |   46 ++++++-----
- gcc/ada/adaint.h                   |    6 ++
- gcc/ada/ctrl_c.c                   |    2 +-
- gcc/ada/gcc-interface/Makefile.in  |   28 +++++++
- gcc/ada/gsocket.h                  |    3 +-
- gcc/ada/mlib-tgt-specific-bare.adb |   47 +++++++++++
- gcc/ada/s-oscons-tmplt.c           |    2 +-
- gcc/ada/system-bare-armeb.ads      |  153 ++++++++++++++++++++++++++++++++++++
- gcc/ada/system-bare-armel.ads      |  153 ++++++++++++++++++++++++++++++++++++
- gcc/ada/system-bare-m68k.ads       |  152 +++++++++++++++++++++++++++++++++++
- gcc/ada/system-bare-ppc.ads        |  152 +++++++++++++++++++++++++++++++++++
- gcc/ada/system-bare-ppc64.ads      |  153 ++++++++++++++++++++++++++++++++++++
- gcc/ada/terminals.c                |    5 +-
- gcc/config.gcc                     |    9 +++
- gcc/config/elfbare.h               |   33 ++++++++
- gnattools/configure                |    7 ++
- gnattools/configure.ac             |    7 ++
- libada/configure                   |   30 +++++++
- libada/configure.ac                |    2 +
+ gcc/ada/adaint.c                   |  46 ++++++-----
+ gcc/ada/adaint.h                   |   6 ++
+ gcc/ada/ctrl_c.c                   |   2 +-
+ gcc/ada/gcc-interface/Makefile.in  |  28 +++++++
+ gcc/ada/gsocket.h                  |   3 +-
+ gcc/ada/mlib-tgt-specific-bare.adb |  47 ++++++++++++
+ gcc/ada/s-oscons-tmplt.c           |   2 +-
+ gcc/ada/system-bare-armeb.ads      | 153 +++++++++++++++++++++++++++++++++++++
+ gcc/ada/system-bare-armel.ads      | 153 +++++++++++++++++++++++++++++++++++++
+ gcc/ada/system-bare-m68k.ads       | 152 ++++++++++++++++++++++++++++++++++++
+ gcc/ada/system-bare-ppc.ads        | 152 ++++++++++++++++++++++++++++++++++++
+ gcc/ada/system-bare-ppc64.ads      | 153 +++++++++++++++++++++++++++++++++++++
+ gcc/ada/terminals.c                |   5 +-
+ gcc/config.gcc                     |   9 +++
+ gcc/config/elfbare.h               |  33 ++++++++
+ gnattools/configure                |   7 ++
+ gnattools/configure.ac             |   7 ++
+ libada/configure                   |  30 ++++++++
+ libada/configure.ac                |   2 +
  19 files changed, 964 insertions(+), 26 deletions(-)
  create mode 100644 gcc/ada/mlib-tgt-specific-bare.adb
  create mode 100644 gcc/ada/system-bare-armeb.ads
@@ -293,7 +293,7 @@ index a860b76..2e2186d 100644
  #include <signal.h>
  
 diff --git a/gcc/ada/gcc-interface/Makefile.in b/gcc/ada/gcc-interface/Makefile.in
-index 0ddde72..dc760d5 100644
+index ee610f7..e643c26 100644
 --- a/gcc/ada/gcc-interface/Makefile.in
 +++ b/gcc/ada/gcc-interface/Makefile.in
 @@ -1598,6 +1598,34 @@ ifeq ($(strip $(filter-out avr none powerpc% eabispe leon% erc32% unknown elf,$(
@@ -1228,10 +1228,10 @@ index 36b97a6..0fab553 100644
  #endif
  
 diff --git a/gcc/config.gcc b/gcc/config.gcc
-index 1a0be50..945f219 100644
+index 2b54dd9..e839aab 100644
 --- a/gcc/config.gcc
 +++ b/gcc/config.gcc
-@@ -3778,6 +3778,15 @@ case ${target} in
+@@ -3826,6 +3826,15 @@ case ${target} in
  		;;
  esac
  
@@ -1287,12 +1287,12 @@ index 0000000..09c10f2
 +    }				        \
 +  while (0)
 diff --git a/gnattools/configure b/gnattools/configure
-index 54a2be6..57b2005 100755
+index 883b705..3f672a9 100755
 --- a/gnattools/configure
 +++ b/gnattools/configure
-@@ -2105,6 +2105,13 @@ case "${target}" in
-     mlib-tgt-specific.adb<mlib-tgt-specific-lynxos.adb \
-     indepsw.adb<indepsw-gnu.adb"
+@@ -2090,6 +2090,13 @@ case "${target}" in
+     indepsw.adb<indepsw-mingw.adb"
+     EXTRA_GNATTOOLS='../../gnatdll$(exeext)'
      ;;
 +  arm-none-eabi | arme[bl]-none-eabi | \
 +  m68k-none-elf | \
@@ -1305,12 +1305,12 @@ index 54a2be6..57b2005 100755
  
  # From user or toplevel makefile.
 diff --git a/gnattools/configure.ac b/gnattools/configure.ac
-index 4305e6b..3a6e5ea 100644
+index 5edaadf..8a94329 100644
 --- a/gnattools/configure.ac
 +++ b/gnattools/configure.ac
-@@ -145,6 +145,13 @@ case "${target}" in
-     mlib-tgt-specific.adb<mlib-tgt-specific-lynxos.adb \
-     indepsw.adb<indepsw-gnu.adb"
+@@ -130,6 +130,13 @@ case "${target}" in
+     indepsw.adb<indepsw-mingw.adb"
+     EXTRA_GNATTOOLS='../../gnatdll$(exeext)'
      ;;
 +  arm-none-eabi | arme[bl]-none-eabi | \
 +  m68k-none-elf | \
@@ -1398,5 +1398,5 @@ index 30c1782..961c52b 100644
  m4_rename_force([real_PRECIOUS],[_AC_ARG_VAR_PRECIOUS])
  
 -- 
-1.7.10.4
+1.8.3.2
 

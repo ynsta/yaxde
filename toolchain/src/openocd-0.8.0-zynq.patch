@@ -1,0 +1,70 @@
+diff --git a/src/target/arm_adi_v5.c b/src/target/arm_adi_v5.c
+index 28f4318..41471bc 100644
+--- a/src/target/arm_adi_v5.c
++++ b/src/target/arm_adi_v5.c
+@@ -1285,8 +1285,8 @@ int dap_lookup_cs_component(struct adiv5_dap *dap, int ap,
+ 			uint32_t dbgbase, uint8_t type, uint32_t *addr)
+ {
+ 	uint32_t ap_old;
+-	uint32_t romentry, entry_offset = 0, component_base, devtype;
+-	int retval = ERROR_FAIL;
++	uint32_t romentry, entry_offset = 0, component_base, devtype, cid1;
++	int found = ERROR_FAIL;
+ 
+ 	if (ap >= 256)
+ 		return ERROR_COMMAND_SYNTAX_ERROR;
+@@ -1295,8 +1295,8 @@ int dap_lookup_cs_component(struct adiv5_dap *dap, int ap,
+ 	dap_ap_select(dap, ap);
+ 
+ 	do {
+-		retval = mem_ap_read_atomic_u32(dap, (dbgbase&0xFFFFF000) |
+-						entry_offset, &romentry);
++		int retval = mem_ap_read_atomic_u32(dap, (dbgbase&0xFFFFF000) |
++						    entry_offset, &romentry);
+ 		if (retval != ERROR_OK)
+ 			return retval;
+ 
+@@ -1304,6 +1304,24 @@ int dap_lookup_cs_component(struct adiv5_dap *dap, int ap,
+ 			+ (romentry & 0xFFFFF000);
+ 
+ 		if (romentry & 0x1) {
++			/* read component ID register */
++			retval = mem_ap_read_atomic_u32(dap,
++					(component_base & 0xfffff000) | 0xff4,
++					&cid1);
++
++			if (retval != ERROR_OK)
++				return retval;
++
++			/* check for child table */
++			if ((cid1 & 0xf0) == 0x10) {
++				if (dap_lookup_cs_component(dap, ap, component_base, type, addr) == ERROR_OK) {
++					found = ERROR_OK;
++					break;
++				}
++				continue;
++			}
++
++			/* read MEMTYPE register */
+ 			retval = mem_ap_read_atomic_u32(dap,
+ 					(component_base & 0xfffff000) | 0xfcc,
+ 					&devtype);
+@@ -1311,7 +1329,7 @@ int dap_lookup_cs_component(struct adiv5_dap *dap, int ap,
+ 				return retval;
+ 			if ((devtype & 0xff) == type) {
+ 				*addr = component_base;
+-				retval = ERROR_OK;
++				found = ERROR_OK;
+ 				break;
+ 			}
+ 		}
+@@ -1320,7 +1338,7 @@ int dap_lookup_cs_component(struct adiv5_dap *dap, int ap,
+ 
+ 	dap_ap_select(dap, ap_old);
+ 
+-	return retval;
++	return found;
+ }
+ 
+ static int dap_info_command(struct command_context *cmd_ctx,
+

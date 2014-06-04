@@ -40,13 +40,11 @@ build-env
 BINUTILS_PATCHES=""
 
 GCC_PATCHES="\
-${PKGDIR}/gcc-4.8.0-arm-cortex-elf-multilibs.patch \
-${PKGDIR}/gcc-4.8.0-ada_bare_board.patch \
-${PKGDIR}/gcc-4.8.0-xgnatugn-canadian.patch \
-${PKGDIR}/gcc-4.8.0-fix-gnatools-canadian.patch"
+${PKGDIR}/gcc-4.8.3-arm-cortex-elf-multilibs.patch \
+${PKGDIR}/gcc-4.8.3-ada_bare_board.patch \
+"
 
-NEWLIB_PATCHES="\
-${PKGDIR}/newlib-2.0.0-fix-compilation-with-armv6s-m.patch"
+NEWLIB_PATCHES=""
 
 GDB_PATCHES=""
 

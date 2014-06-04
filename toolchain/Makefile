@@ -155,7 +155,7 @@ $(tarballs): $(BASEPATH)/$$(subst .tar.xz,,$$(@F))
 	@echo "======================================================================="
 	@mkdir -p $(@D)
 	@echo -n "Archiving $^ "
-	@cd $(BASEPATH); tar -cJf $(tar) $(<F) 2>/dev/null
+	@cd $(BASEPATH); XZ_OPT=-9e tar -cJf $(tar) $(<F) 2>/dev/null
 	@echo "Done"
 	@echo ""
 
