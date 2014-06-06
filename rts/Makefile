@@ -13,6 +13,7 @@ AR = $(TARGET)-ar
 mlibs:=$(shell $(CC) -print-multi-lib)
 mlibs:=$(subst ;,:,$(mlibs))
 mlibs_path:=$(filter-out .,$(foreach mlib,$(mlibs),$(word 1,$(subst :,$(space),$(mlib)))))
+mlibs_path:=$(foreach path,$(mlibs_path),$(patsubst %/,%,$(path)))
 libs=$(foreach path,$(mlibs_path),rts-$(subst /,_,$(TARGET)/$(path))/adalib/$(libname))
 mks=$(foreach path,$(mlibs_path),rts-$(subst /,_,$(TARGET)/$(path))/config.mk)
 
@@ -44,6 +45,7 @@ adafiles := $(wildcard src/$(TARGET)/common/*.ad? src/common/*.ad?) $(sysfiles)
 # TODO -fstack-check requires _gnat_stack_check
 CFLAGS_B := -ffunction-sections -fdata-sections -Wl,--gc-sections -nostdinc -nostdlib
 ADAFLAGS := -gnata -gnato -gnaty -gnat2012
+
 
 all: $(libs)
 
@@ -80,11 +82,14 @@ $(libs): $(mlibs_path)
 	@chmod -R a-w $(RTS)/adalib/* $(RTS)/adainclude/*
 
 clean:
-	@find . -name '*.o' -exec chmod +w rm {} \;
-	@find . -name '*.o' -exec rm {} \;
+	@find . -name '*.o' -exec chmod +w {} +
+	@find . -name '*.o' -exec rm -f {} +
 
 distclean: clean
 	@chmod -fR +w rts-* || true
 	@rm -rf __fake__ rts-*
+
+dbg:
+	@echo $(mlibs_path)
 
 .PHONY: all check distclean clean $(mlibs_path) $(libs)
