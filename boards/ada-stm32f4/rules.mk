@@ -26,10 +26,10 @@
 #
 
 stlink::
-	@st-util -p 1234
+	@st-util -p 3333
 
 xstlink::
-	@xterm -T "stlink" -e $(MAKE) stlink &
+	@xterm -T "stlink" -e $(MAKE) st-util -p 3333 &
 
 
 board_clean:

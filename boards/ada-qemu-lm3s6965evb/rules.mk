@@ -31,7 +31,7 @@ qemu:: $(program).bin
 
 xqemu:: $(program).bin
 	$(eval qemu := qemu-system-$(word 1,$(subst -,$(space),$(target))))
-	@xterm -T "qemu $(program)" -e $(qemu) -M lm3s6965evb -nographic -serial stdio -monitor null -semihosting -kernel $(program).bin -s -S -singlestep &
+	@xterm -T "qemu $(program)" -e $(qemu) -M lm3s6965evb -nographic -serial stdio -monitor null -semihosting -kernel $(program).bin -gdb tcp::3333 -S -singlestep &
 
 
 board_clean:

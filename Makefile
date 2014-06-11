@@ -215,10 +215,10 @@ gdb:: $(program)
 	@$(target)-gdb -ex "target remote localhost:1234" $(program)
 
 xgdb::
-	@xterm -T "gdb $(program)" -e $(target)-gdb -ex "target remote localhost:1234" $(program)
+	@xterm -T "gdb $(program)" -e $(target)-gdb -ex "target remote localhost:3333" -ex "load" $(program)
 
 egdb::
-	@emacs --eval '(gdb "$(target)-gdb -ex \"target remote localhost:1234\" --annotate=3 $(program)")'
+	@emacs --eval '(gdb "$(target)-gdb -ex \"target remote localhost:3333\" -ex \"load\" --annotate=3 $(program)")'
 
 
 clean:: board_clean
