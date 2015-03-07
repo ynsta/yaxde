@@ -39,7 +39,7 @@ mtargets	:= $(filter-out mxe stlink qemu, $(targets))
 
 # set VERSION
 ifeq ($(VERSION),)
-export VERSION	:= 4.8-$(shell date +%Y.%m)
+export VERSION	:= 4.9-$(shell date +%Y.%m)
 endif
 
 # set BASEPATH
@@ -53,7 +53,7 @@ ifneq ($(PREFIX),)
 export PREFIX:=
 endif
 
-distrib		:= $(shell python -c 'import platform; print "-".join(platform.dist()[0:2] + (platform.machine(), )).lower()')
+distrib		:= $(shell python3 -c 'import platform; print("-".join(platform.dist()[0:2] + (platform.machine(), )).lower())')
 
 space		:=
 space		+=
@@ -124,7 +124,7 @@ deps:
 
 .SECONDEXPANSION:
 
-$(builds): scripts/build-$$(subst -$(VERSION),,$$(@F))-$(vbase).sh
+$(builds): scripts/build-$$(subst -$(VERSION),,$$(@F)).sh
 	$(eval target := $(subst -$(VERSION),,$(@F)))
 	@echo "======================================================================="
 	@echo "= TARGET: $@"
@@ -136,7 +136,7 @@ $(builds): scripts/build-$$(subst -$(VERSION),,$$(@F))-$(vbase).sh
 	@echo ""
 
 
-$(mingws): scripts/build-$$(subst -$(VERSION)_setup.exe,,$$(@F))-$(vbase)-mingw.sh \
+$(mingws): scripts/build-$$(subst -$(VERSION)_setup.exe,,$$(@F))-mingw.sh \
 	   $(BASEPATH)/$$(subst _setup.exe,,$$(@F))
 	$(eval target := $(subst -$(VERSION)_setup.exe,,$(@F)))
 	@echo "======================================================================="

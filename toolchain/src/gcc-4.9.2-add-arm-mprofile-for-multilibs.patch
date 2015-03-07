@@ -1,0 +1,245 @@
+From f478dcff44a70999fa82b462025acca4f7651961 Mon Sep 17 00:00:00 2001
+From: Stany MARCEL <stanypub@gmail.com>
+Date: Fri, 6 Mar 2015 00:25:10 +0100
+Subject: [PATCH 1/2] Add arm mprofile for multilib
+
+Signed-off-by: Stany MARCEL <stanypub@gmail.com>
+---
+ gcc/config.gcc            |  26 ++++++++-
+ gcc/config/arm/elf.h      |  10 ++--
+ gcc/config/arm/t-mprofile | 135 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 162 insertions(+), 9 deletions(-)
+ create mode 100644 gcc/config/arm/t-mprofile
+
+diff --git a/gcc/config.gcc b/gcc/config.gcc
+index 9d3fa57..58c4b43 100644
+--- a/gcc/config.gcc
++++ b/gcc/config.gcc
+@@ -181,7 +181,7 @@
+ #			the --with-sysroot configure option or the
+ #			--sysroot command line option is used this
+ #			will be relative to the sysroot.
+-# target_type_format_char 
++# target_type_format_char
+ # 			The default character to be used for formatting
+ #			the attribute in a
+ #			.type symbol_name, ${t_t_f_c}<property>
+@@ -3195,7 +3195,7 @@ if test x$with_cpu = x ; then
+          with_cpu=8548
+       else
+          with_cpu=8540
+-      fi       
++      fi
+       ;;
+     sparc*-*-*)
+       case ${target} in
+@@ -3616,6 +3616,28 @@ case "${target}" in
+ 					tmake_file="${tmake_file} arm/t-aprofile"
+ 					break
+ 					;;
++				mprofile)
++				# Note that arm/t-mprofile is a
++				# stand-alone make file fragment to be
++				# used only with itself.  We do not
++				# specifically use the
++				# TM_MULTILIB_OPTION framework because
++				# this shorthand is more
++				# pragmatic. Additionally it is only
++				# designed to work without any
++				# with-cpu, with-arch with-mode
++				# with-fpu or with-float options.
++					if test "x$with_arch" != x \
++					    || test "x$with_cpu" != x \
++					    || test "x$with_float" != x \
++					    || test "x$with_fpu" != x \
++					    || test "x$with_mode" != x ; then
++					    echo "Error: You cannot use any of --with-arch/cpu/fpu/float/mode with --with-multilib-list=mprofile" 1>&2
++					    exit 1
++					fi
++					tmake_file="${tmake_file} arm/t-mprofile"
++					break
++					;;
+ 				default)
+ 					;;
+ 				*)
+diff --git a/gcc/config/arm/elf.h b/gcc/config/arm/elf.h
+index f14c766..c179478 100644
+--- a/gcc/config/arm/elf.h
++++ b/gcc/config/arm/elf.h
+@@ -3,7 +3,7 @@
+    Copyright (C) 1995-2014 Free Software Foundation, Inc.
+    Contributed by Philip Blundell <philb@gnu.org> and
+    Catherine Moore <clm@cygnus.com>
+-   
++
+    This file is part of GCC.
+ 
+    GCC is free software; you can redistribute it and/or modify it
+@@ -109,16 +109,13 @@
+ #ifndef LINK_SPEC
+ #define LINK_SPEC "%{mbig-endian:-EB} %{mlittle-endian:-EL} -X"
+ #endif
+-  
++
+ /* Run-time Target Specification.  */
+ #ifndef TARGET_DEFAULT
+ #define TARGET_DEFAULT (MASK_APCS_FRAME)
+ #endif
+ 
+-#ifndef MULTILIB_DEFAULTS
+-#define MULTILIB_DEFAULTS \
+-  { "marm", "mlittle-endian", "mfloat-abi=soft", "mno-thumb-interwork", "fno-leading-underscore" }
+-#endif
++#undef MULTILIB_DEFAULTS
+ 
+ #define TARGET_ASM_FILE_START_APP_OFF true
+ #define TARGET_ASM_FILE_START_FILE_DIRECTIVE true
+@@ -161,4 +158,3 @@
+ #undef L_floatundidf
+ #undef L_floatundisf
+ #endif
+-
+diff --git a/gcc/config/arm/t-mprofile b/gcc/config/arm/t-mprofile
+new file mode 100644
+index 0000000..d8fcda4
+--- /dev/null
++++ b/gcc/config/arm/t-mprofile
+@@ -0,0 +1,135 @@
++# Copyright (C) 2012-2014 Free Software Foundation, Inc.
++#
++# This file is part of GCC.
++#
++# GCC is free software; you can redistribute it and/or modify
++# it under the terms of the GNU General Public License as published by
++# the Free Software Foundation; either version 3, or (at your option)
++# any later version.
++#
++# GCC is distributed in the hope that it will be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++# GNU General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with GCC; see the file COPYING3.  If not see
++# <http://www.gnu.org/licenses/>.
++
++# This is a target makefile fragment that attempts to get
++# multilibs built for the range of CPU's, FPU's and ABI's that
++# are relevant for embeded application only thumb libraries are built
++
++MULTILIB_OPTIONS        =
++MULTILIB_DIRNAMES       =
++MULTILIB_EXCEPTIONS     =
++MULTILIB_MATCHES        =
++MULTILIB_REUSE	        =
++
++MULTILIB_OPTIONS       += marm mthumb
++MULTILIB_DIRNAMES      += arm thumb
++
++MULTILIB_OPTIONS       += march=armv6s-m/march=armv7-m/march=armv7e-m/march=armv7-a/march=armv7ve/march=armv8-a
++MULTILIB_DIRNAMES      +=          v6s-m          v7-m          v7e-m          v7-a          v7ve          v8-a
++
++MULTILIB_OPTIONS       += mfpu=fpv4-sp-d16/mfpu=fpv5-sp-d16/mfpu=fpv5-d16/mfpu=vfpv3-d16/mfpu=vfpv3/mfpu=neon/mfpu=vfpv4-d16/mfpu=vfpv4/mfpu=neon-vfpv4/mfpu=neon-fp-armv8
++MULTILIB_DIRNAMES      +=      fpv4-sp          fpv5-sp          fpv5          vfpv3-d16      vfpv3      neon      vfpv4-d16      vfpv4      neon-vfpv4      neon-fp-armv8
++
++MULTILIB_OPTIONS       += mfloat-abi=softfp/mfloat-abi=hard
++MULTILIB_DIRNAMES      += softfp hard
++
++
++# We don't build no-float libraries with an FPU.
++MULTILIB_EXCEPTIONS    += marm
++MULTILIB_EXCEPTIONS    += mthumb
++MULTILIB_EXCEPTIONS    += marm/mthumb*
++MULTILIB_EXCEPTIONS    += *mfpu=fpv4-sp-d16
++MULTILIB_EXCEPTIONS    += *mfpu=fpv5-sp-d16
++MULTILIB_EXCEPTIONS    += *mfpu=fpv5-d16
++MULTILIB_EXCEPTIONS    += *mfpu=vfpv3-d16
++MULTILIB_EXCEPTIONS    += *mfpu=vfpv3
++MULTILIB_EXCEPTIONS    += *mfpu=neon
++MULTILIB_EXCEPTIONS    += *mfpu=vfpv4-d16
++MULTILIB_EXCEPTIONS    += *mfpu=vfpv4
++MULTILIB_EXCEPTIONS    += *mfpu=neon-vfpv4
++MULTILIB_EXCEPTIONS    += *mfpu=neon-fp-armv8
++
++# Disable as not yet supported by binutils 2.25
++MULTILIB_EXCEPTIONS    += *mfpu=fpv5-sp-d16*
++MULTILIB_EXCEPTIONS    += *mfpu=fpv5-d16*
++
++# We don't build libraries for softfp
++MULTILIB_EXCEPTIONS    += *mfloat-abi=softfp
++
++# We don't build libraries without a complete set
++MULTILIB_EXCEPTIONS    += march=*
++MULTILIB_EXCEPTIONS    += mfloat-abi=*
++MULTILIB_EXCEPTIONS    += mfpu=*
++MULTILIB_EXCEPTIONS    += marm/mfloat-abi=*
++MULTILIB_EXCEPTIONS    += marm/mfpu=*
++MULTILIB_EXCEPTIONS    += mthumb/mfloat-abi=*
++MULTILIB_EXCEPTIONS    += mthumb/mfpu=*
++MULTILIB_EXCEPTIONS    += *march=armv6s-m/mfloat-abi=*
++MULTILIB_EXCEPTIONS    += *march=armv7-m/mfloat-abi=*
++MULTILIB_EXCEPTIONS    += *march=armv7e-m/mfloat-abi=*
++MULTILIB_EXCEPTIONS    += *march=armv7-a/mfloat-abi=*
++MULTILIB_EXCEPTIONS    += *march=armv7ve/mfloat-abi=*
++MULTILIB_EXCEPTIONS    += *march=armv8-a/mfloat-abi=*
++
++# Ensuze we don't build arm libraries for cortex-m
++MULTILIB_EXCEPTIONS    += marm/march=armv6s-m
++MULTILIB_EXCEPTIONS    += marm/march=armv7-m
++MULTILIB_EXCEPTIONS    += marm/march=armv7e-m
++MULTILIB_EXCEPTIONS    += marm/march=armv7e-m/*
++
++# Ensure the correct FPU variants apply to the correct base architectures.
++MULTILIB_EXCEPTIONS    += *march=armv6s-m/*mfpu=*
++MULTILIB_EXCEPTIONS    += *march=armv7-m/*mfpu=*
++MULTILIB_EXCEPTIONS    += *march=armv7e-m/*mfpu=vfp*
++MULTILIB_EXCEPTIONS    += *march=armv7e-m/*mfpu=neon*
++
++MULTILIB_EXCEPTIONS    += *march=armv7-a/*mfpu=fpv*
++MULTILIB_EXCEPTIONS    += *march=armv7-a/*mfpu=vfpv4*
++MULTILIB_EXCEPTIONS    += *march=armv7-a/*mfpu=neon-vfpv4*
++MULTILIB_EXCEPTIONS    += *march=armv7-a/*mfpu=neon-fp-armv8*
++
++MULTILIB_EXCEPTIONS    += *march=armv7ve/*mfpu=fpv*
++MULTILIB_EXCEPTIONS    += *march=armv7ve/*mfpu=vfpv3-d16*
++MULTILIB_EXCEPTIONS    += *march=armv7ve/*mfpu=vfpv3*
++MULTILIB_EXCEPTIONS    += *march=armv7ve/*mfpu=neon/*
++MULTILIB_EXCEPTIONS    += *march=armv7ve/*mfpu=neon-fp-armv8*
++
++MULTILIB_EXCEPTIONS    += *march=armv8-a/*mfpu=fpv*
++MULTILIB_EXCEPTIONS    += *march=armv8-a/*mfpu=vfpv3-d16*
++MULTILIB_EXCEPTIONS    += *march=armv8-a/*mfpu=vfpv3*
++MULTILIB_EXCEPTIONS    += *march=armv8-a/*mfpu=neon/*
++MULTILIB_EXCEPTIONS    += *march=armv8-a/*mfpu=vfpv4*
++MULTILIB_EXCEPTIONS    += *march=armv8-a/*mfpu=vfpv4*
++MULTILIB_EXCEPTIONS    += *march=armv8-a/*mfpu=neon-vfpv4*
++
++#
++MULTILIB_MATCHES       += marm=mno-thumb
++
++# CPU Matches
++MULTILIB_MATCHES       += march?armv6s-m=mcpu?cortex-m0
++MULTILIB_MATCHES       += march?armv6s-m=mcpu?cortex-m0plus
++MULTILIB_MATCHES       += march?armv6s-m=mcpu?cortex-m1
++MULTILIB_MATCHES       += march?armv6s-m=march?armv6-m
++MULTILIB_MATCHES       += march?armv7-m=mcpu?cortex-m3
++MULTILIB_MATCHES       += march?armv7e-m=mcpu?cortex-m4
++MULTILIB_MATCHES       += march?armv7e-m=mcpu?cortex-m7
++MULTILIB_MATCHES       += march?armv7-a=mcpu?cortex-a8
++MULTILIB_MATCHES       += march?armv7-a=mcpu?cortex-a9
++MULTILIB_MATCHES       += march?armv7-a=mcpu?cortex-a5
++MULTILIB_MATCHES       += march?armv7ve=mcpu?cortex-a7
++MULTILIB_MATCHES       += march?armv7ve=mcpu?cortex-a15
++MULTILIB_MATCHES       += march?armv7ve=mcpu?cortex-a12
++MULTILIB_MATCHES       += march?armv7ve=mcpu?cortex-a15.cortex-a7
++MULTILIB_MATCHES       += march?armv8-a=mcpu?cortex-a53
++MULTILIB_MATCHES       += march?armv8-a=mcpu?cortex-a57
++MULTILIB_MATCHES       += march?armv8-a=mcpu?cortex-a57.cortex-a53
++
++# FPU matches
++MULTILIB_MATCHES       += mfpu?vfpv3=mfpu?vfpv3-fp16
++MULTILIB_MATCHES       += mfpu?vfpv3-d16=mfpu?vfpv3-fp16-d16
++MULTILIB_MATCHES       += mfpu?neon-fp-armv8=mfpu?crypto-neon-fp-armv8
+-- 
+2.3.1
+

@@ -1,6 +1,6 @@
-From 154eeb3137a2e19f83f5eefa31e69354364b7be9 Mon Sep 17 00:00:00 2001
+From 47c0daedb0aae6275288beb5370190564f890585 Mon Sep 17 00:00:00 2001
 From: Stany MARCEL <stanypub@gmail.com>
-Date: Tue, 3 Jun 2014 10:13:00 +0200
+Date: Fri, 6 Mar 2015 10:01:26 +0100
 Subject: [PATCH 2/2] Add Ada gnat* compilation for some elf bare board systems
 
 Provide specifics system.ads and implements required stub in gnatlibs for the
@@ -19,13 +19,12 @@ building with a newlib configured with --disable-newlib-supplied-syscalls
 
 Signed-off-by: Stany MARCEL <stanypub@gmail.com>
 ---
- gcc/ada/adaint.c                   |  46 ++++++-----
+ gcc/ada/adaint.c                   |  48 ++++++------
  gcc/ada/adaint.h                   |   6 ++
- gcc/ada/ctrl_c.c                   |   2 +-
  gcc/ada/gcc-interface/Makefile.in  |  28 +++++++
  gcc/ada/gsocket.h                  |   3 +-
  gcc/ada/mlib-tgt-specific-bare.adb |  47 ++++++++++++
- gcc/ada/s-oscons-tmplt.c           |   2 +-
+ gcc/ada/s-oscons-tmplt.c           |   7 +-
  gcc/ada/system-bare-armeb.ads      | 153 +++++++++++++++++++++++++++++++++++++
  gcc/ada/system-bare-armel.ads      | 153 +++++++++++++++++++++++++++++++++++++
  gcc/ada/system-bare-m68k.ads       | 152 ++++++++++++++++++++++++++++++++++++
@@ -38,7 +37,7 @@ Signed-off-by: Stany MARCEL <stanypub@gmail.com>
  gnattools/configure.ac             |   7 ++
  libada/configure                   |  30 ++++++++
  libada/configure.ac                |   2 +
- 19 files changed, 964 insertions(+), 26 deletions(-)
+ 18 files changed, 969 insertions(+), 26 deletions(-)
  create mode 100644 gcc/ada/mlib-tgt-specific-bare.adb
  create mode 100644 gcc/ada/system-bare-armeb.ads
  create mode 100644 gcc/ada/system-bare-armel.ads
@@ -48,7 +47,7 @@ Signed-off-by: Stany MARCEL <stanypub@gmail.com>
  create mode 100644 gcc/config/elfbare.h
 
 diff --git a/gcc/ada/adaint.c b/gcc/ada/adaint.c
-index dc94d63..b7db8d8 100644
+index 8d574da..c5b9438 100644
 --- a/gcc/ada/adaint.c
 +++ b/gcc/ada/adaint.c
 @@ -157,7 +157,7 @@ UINT CurrentCodePage;
@@ -57,10 +56,10 @@ index dc94d63..b7db8d8 100644
  #include <sys/wait.h>
 -#elif defined (__nucleus__)
 +#elif defined (__nucleus__) || defined(__elfbare__)
- /* No wait() or waitpid() calls available */
+ /* No wait() or waitpid() calls available.  */
  #else
- /* Default case */
-@@ -319,7 +319,7 @@ int __gnat_vmsp = 1;
+ /* Default case.  */
+@@ -323,10 +323,10 @@ int __gnat_vmsp = 1;
  int __gnat_vmsp = 0;
  #endif
  
@@ -68,8 +67,12 @@ index dc94d63..b7db8d8 100644
 +#if defined (VMS) || defined(__elfbare__)
  #define GNAT_MAX_PATH_LEN 256 /* PATH_MAX */
  
- #elif defined (__vxworks) || defined (__OPENNT) || defined(__nucleus__)
-@@ -502,7 +502,7 @@ __gnat_readlink (char *path ATTRIBUTE_UNUSED,
+-#elif defined (__vxworks) || defined (__OPENNT) || defined(__nucleus__)
++#elif defined (__vxworks) || defined (__OPENNT) || defined(__nucleus__) || defined(__elfbare__)
+ #define GNAT_MAX_PATH_LEN PATH_MAX
+ 
+ #else
+@@ -506,7 +506,7 @@ __gnat_readlink (char *path ATTRIBUTE_UNUSED,
  		 size_t bufsiz ATTRIBUTE_UNUSED)
  {
  #if defined (_WIN32) || defined (VMS) \
@@ -78,7 +81,7 @@ index dc94d63..b7db8d8 100644
    return -1;
  #else
    return readlink (path, buf, bufsiz);
-@@ -518,7 +518,7 @@ __gnat_symlink (char *oldpath ATTRIBUTE_UNUSED,
+@@ -522,7 +522,7 @@ __gnat_symlink (char *oldpath ATTRIBUTE_UNUSED,
  		char *newpath ATTRIBUTE_UNUSED)
  {
  #if defined (_WIN32) || defined (VMS) \
@@ -87,7 +90,7 @@ index dc94d63..b7db8d8 100644
    return -1;
  #else
    return symlink (oldpath, newpath);
-@@ -528,7 +528,8 @@ __gnat_symlink (char *oldpath ATTRIBUTE_UNUSED,
+@@ -532,7 +532,8 @@ __gnat_symlink (char *oldpath ATTRIBUTE_UNUSED,
  /* Try to lock a file, return 1 if success.  */
  
  #if defined (__vxworks) || defined (__nucleus__) \
@@ -97,16 +100,17 @@ index dc94d63..b7db8d8 100644
  
  /* Version that does not use link. */
  
-@@ -668,6 +669,8 @@ __gnat_get_current_dir (char *dir, int *length)
+@@ -672,6 +673,9 @@ __gnat_get_current_dir (char *dir, int *length)
  #elif defined (VMS)
     /* Force Unix style, which is what GNAT uses internally.  */
     getcwd (dir, *length, 0);
 +#elif defined(__elfbare__)
-+   /* Nothing */
++   dir[0] = '/';
++   dir[1] = '\0';
  #else
     getcwd (dir, *length);
  #endif
-@@ -1081,7 +1084,7 @@ __gnat_open_new_temp (char *path, int fmode)
+@@ -1148,7 +1152,7 @@ __gnat_open_new_temp (char *path, int fmode)
    return mkstemp (path);
  #elif defined (__Lynx__)
    mktemp (path);
@@ -115,7 +119,7 @@ index dc94d63..b7db8d8 100644
    return -1;
  #else
    if (mktemp (path) == NULL)
-@@ -1266,7 +1269,7 @@ __gnat_tmp_name (char *tmp_filename)
+@@ -1349,7 +1353,7 @@ __gnat_tmp_name (char *tmp_filename)
  
  DIR* __gnat_opendir (char *name)
  {
@@ -124,7 +128,7 @@ index dc94d63..b7db8d8 100644
    /* Not supported in RTX */
  
    return NULL;
-@@ -1288,7 +1291,7 @@ DIR* __gnat_opendir (char *name)
+@@ -1371,7 +1375,7 @@ DIR* __gnat_opendir (char *name)
  char *
  __gnat_readdir (DIR *dirp, char *buffer, int *len)
  {
@@ -133,7 +137,7 @@ index dc94d63..b7db8d8 100644
    /* Not supported in RTX */
  
    return NULL;
-@@ -1335,7 +1338,7 @@ __gnat_readdir (DIR *dirp, char *buffer, int *len)
+@@ -1418,7 +1422,7 @@ __gnat_readdir (DIR *dirp, char *buffer, int *len)
  
  int __gnat_closedir (DIR *dirp)
  {
@@ -142,17 +146,16 @@ index dc94d63..b7db8d8 100644
    /* Not supported in RTX */
  
    return 0;
-@@ -2224,7 +2227,8 @@ __gnat_set_writable (char *name)
+@@ -2318,7 +2322,7 @@ __gnat_set_writable (char *name)
    SetFileAttributes
      (wname, GetFileAttributes (wname) & ~FILE_ATTRIBUTE_READONLY);
  #elif ! (defined (__vxworks) && _WRS_VXWORKS_MAJOR < 6) && \
 -  ! defined(__nucleus__)
-+  ! defined(__nucleus__) && \
-+  ! defined(__elfbare__)
++  ! defined(__nucleus__) && ! defined(__elfbare__)
    GNAT_STRUCT_STAT statbuf;
  
    if (GNAT_STAT (name, &statbuf) == 0)
-@@ -2247,7 +2251,7 @@ __gnat_set_executable (char *name)
+@@ -2341,7 +2345,7 @@ __gnat_set_executable (char *name)
      __gnat_set_OWNER_ACL (wname, GRANT_ACCESS, FILE_GENERIC_EXECUTE);
  
  #elif ! (defined (__vxworks) && _WRS_VXWORKS_MAJOR < 6) && \
@@ -161,7 +164,7 @@ index dc94d63..b7db8d8 100644
    GNAT_STRUCT_STAT statbuf;
  
    if (GNAT_STAT (name, &statbuf) == 0)
-@@ -2275,7 +2279,7 @@ __gnat_set_non_writable (char *name)
+@@ -2369,7 +2373,7 @@ __gnat_set_non_writable (char *name)
    SetFileAttributes
      (wname, GetFileAttributes (wname) | FILE_ATTRIBUTE_READONLY);
  #elif ! (defined (__vxworks) && _WRS_VXWORKS_MAJOR < 6) && \
@@ -170,7 +173,7 @@ index dc94d63..b7db8d8 100644
    GNAT_STRUCT_STAT statbuf;
  
    if (GNAT_STAT (name, &statbuf) == 0)
-@@ -2298,7 +2302,7 @@ __gnat_set_readable (char *name)
+@@ -2392,7 +2396,7 @@ __gnat_set_readable (char *name)
      __gnat_set_OWNER_ACL (wname, GRANT_ACCESS, FILE_GENERIC_READ);
  
  #elif ! (defined (__vxworks) && _WRS_VXWORKS_MAJOR < 6) && \
@@ -179,7 +182,7 @@ index dc94d63..b7db8d8 100644
    GNAT_STRUCT_STAT statbuf;
  
    if (GNAT_STAT (name, &statbuf) == 0)
-@@ -2320,7 +2324,7 @@ __gnat_set_non_readable (char *name)
+@@ -2414,7 +2418,7 @@ __gnat_set_non_readable (char *name)
      __gnat_set_OWNER_ACL (wname, DENY_ACCESS, FILE_GENERIC_READ);
  
  #elif ! (defined (__vxworks) && _WRS_VXWORKS_MAJOR < 6) && \
@@ -188,16 +191,16 @@ index dc94d63..b7db8d8 100644
    GNAT_STRUCT_STAT statbuf;
  
    if (GNAT_STAT (name, &statbuf) == 0)
-@@ -2335,7 +2339,7 @@ __gnat_is_symbolic_link_attr (char* name ATTRIBUTE_UNUSED,
-                               struct file_attributes* attr)
+@@ -2430,7 +2434,7 @@ __gnat_is_symbolic_link_attr (char* name ATTRIBUTE_UNUSED,
  {
-    if (attr->symbolic_link == ATTR_UNSET) {
+    if (attr->symbolic_link == ATTR_UNSET)
+      {
 -#if defined (__vxworks) || defined (__nucleus__)
-+#if defined (__vxworks) || defined (__nucleus__) || defined(__elfbare__)
-       attr->symbolic_link = 0;
++#if defined (__vxworks) || defined (__nucleus__) || defined (__elfbare__)
+        attr->symbolic_link = 0;
  
  #elif defined (_AIX) || defined (__APPLE__) || defined (__unix__)
-@@ -2373,7 +2377,7 @@ __gnat_portable_spawn (char *args[])
+@@ -2468,7 +2472,7 @@ __gnat_portable_spawn (char *args[])
    int finished ATTRIBUTE_UNUSED;
    int pid ATTRIBUTE_UNUSED;
  
@@ -206,7 +209,7 @@ index dc94d63..b7db8d8 100644
    return -1;
  
  #elif defined (_WIN32)
-@@ -2430,7 +2434,7 @@ __gnat_portable_spawn (char *args[])
+@@ -2525,7 +2529,7 @@ __gnat_portable_spawn (char *args[])
  int
  __gnat_dup (int oldfd)
  {
@@ -215,7 +218,7 @@ index dc94d63..b7db8d8 100644
    /* Not supported on VxWorks 5.x, but supported on VxWorks 6.0 when using
       RTPs. */
    return -1;
-@@ -2445,7 +2449,7 @@ __gnat_dup (int oldfd)
+@@ -2540,7 +2544,7 @@ __gnat_dup (int oldfd)
  int
  __gnat_dup2 (int oldfd, int newfd)
  {
@@ -224,7 +227,7 @@ index dc94d63..b7db8d8 100644
    /* Not supported on VxWorks 5.x, but supported on VxWorks 6.0 when using
       RTPs.  */
    return -1;
-@@ -2702,7 +2706,7 @@ int
+@@ -2799,7 +2803,7 @@ int
  __gnat_portable_no_block_spawn (char *args[])
  {
  
@@ -233,7 +236,7 @@ index dc94d63..b7db8d8 100644
    return -1;
  
  #elif defined (_WIN32)
-@@ -2745,7 +2749,7 @@ __gnat_portable_wait (int *process_status)
+@@ -2842,7 +2846,7 @@ __gnat_portable_wait (int *process_status)
    int status = 0;
    int pid = 0;
  
@@ -242,7 +245,7 @@ index dc94d63..b7db8d8 100644
    /* Not sure what to do here, so do nothing but return zero.  */
  
  #elif defined (_WIN32)
-@@ -3578,7 +3582,7 @@ __gnat_copy_attribs (char *from ATTRIBUTE_UNUSED, char *to ATTRIBUTE_UNUSED,
+@@ -3678,7 +3682,7 @@ __gnat_copy_attribs (char *from ATTRIBUTE_UNUSED, char *to ATTRIBUTE_UNUSED,
                       int mode ATTRIBUTE_UNUSED)
  {
  #if defined (VMS) || (defined (__vxworks) && _WRS_VXWORKS_MAJOR < 6) || \
@@ -252,7 +255,7 @@ index dc94d63..b7db8d8 100644
  
  #elif defined (_WIN32) && !defined (RTX)
 diff --git a/gcc/ada/adaint.h b/gcc/ada/adaint.h
-index 7956e27..65f3380 100644
+index 28d4c8c..9a4d223 100644
 --- a/gcc/ada/adaint.h
 +++ b/gcc/ada/adaint.h
 @@ -40,7 +40,11 @@ extern "C" {
@@ -267,7 +270,7 @@ index 7956e27..65f3380 100644
  
  /*  Constants used for the form parameter encoding values  */
  #define Encoding_UTF8 0         /* UTF-8 */
-@@ -141,9 +145,11 @@ extern int    __gnat_open_append                   (char *, int);
+@@ -147,9 +151,11 @@ extern int    __gnat_open_append                   (char *, int);
  extern long   __gnat_file_length                   (int);
  extern long   __gnat_named_file_length             (char *);
  extern void   __gnat_tmp_name			   (char *);
@@ -279,24 +282,11 @@ index 7956e27..65f3380 100644
  extern int    __gnat_readdir_is_thread_safe        (void);
  
  extern OS_Time __gnat_file_time_name                (char *);
-diff --git a/gcc/ada/ctrl_c.c b/gcc/ada/ctrl_c.c
-index a860b76..2e2186d 100644
---- a/gcc/ada/ctrl_c.c
-+++ b/gcc/ada/ctrl_c.c
-@@ -50,7 +50,7 @@ void __gnat_uninstall_int_handler (void);
- /* POSIX implementation */
- 
- #if (defined (__unix__) || defined (_AIX) || defined (__APPLE__)) \
-- && !defined (__vxworks)
-+ && !(defined (__vxworks) || defined(__elfbare__))
- 
- #include <signal.h>
- 
 diff --git a/gcc/ada/gcc-interface/Makefile.in b/gcc/ada/gcc-interface/Makefile.in
-index ee610f7..e643c26 100644
+index 5c36962..cf988f2 100644
 --- a/gcc/ada/gcc-interface/Makefile.in
 +++ b/gcc/ada/gcc-interface/Makefile.in
-@@ -1598,6 +1598,34 @@ ifeq ($(strip $(filter-out avr none powerpc% eabispe leon% erc32% unknown elf,$(
+@@ -1657,6 +1657,34 @@ ifeq ($(strip $(filter-out elf eabi eabispe,$(target_os))),)
    indepsw.adb<indepsw-gnu.adb
  endif
  
@@ -329,10 +319,10 @@ index ee610f7..e643c26 100644
 +endif
 +
  # Cygwin/Mingw32
- ifeq ($(strip $(filter-out cygwin% mingw32% pe,$(osys))),)
+ ifeq ($(strip $(filter-out cygwin% mingw32% pe,$(target_os))),)
    # Cygwin provides a full Posix environment, and so we use the default
 diff --git a/gcc/ada/gsocket.h b/gcc/ada/gsocket.h
-index e21d714..f718c05 100644
+index 1d9235f..39fd0bd 100644
 --- a/gcc/ada/gsocket.h
 +++ b/gcc/ada/gsocket.h
 @@ -29,7 +29,8 @@
@@ -399,7 +389,7 @@ index 0000000..993a8e4
 +   Support_For_Libraries_Ptr := Support_For_Libraries'Access;
 +end MLib.Tgt.Specific;
 diff --git a/gcc/ada/s-oscons-tmplt.c b/gcc/ada/s-oscons-tmplt.c
-index 0964886..7e55ca4 100644
+index 5a034d5..675bad8 100644
 --- a/gcc/ada/s-oscons-tmplt.c
 +++ b/gcc/ada/s-oscons-tmplt.c
 @@ -105,7 +105,7 @@ pragma Style_Checks ("M32766");
@@ -411,6 +401,25 @@ index 0964886..7e55ca4 100644
  # define HAVE_TERMIOS
  #endif
  
+@@ -1505,6 +1505,7 @@ CND(PTHREAD_ONCE_SIZE,       "pthread_once_t")
+ #define SIZEOF_struct_file_attributes (sizeof (struct file_attributes))
+ CND(SIZEOF_struct_file_attributes, "struct file_attributes")
+ 
++#if !defined(__elfbare__)
+ /**
+  ** Maximal size of buffer for struct dirent. Note: Since POSIX.1 does not
+  ** specify the size of the d_name field, and other nonstandard fields may
+@@ -1517,6 +1518,10 @@ CND(SIZEOF_struct_file_attributes, "struct file_attributes")
+   ((char*) &dent.d_name - (char*) &dent) + NAME_MAX + 1
+ CND(SIZEOF_struct_dirent_alloc, "struct dirent allocation")
+ }
++#else
++#define SIZEOF_struct_dirent_alloc (NAME_MAX + 12)
++CND(SIZEOF_struct_dirent_alloc, "struct dirent allocation")
++#endif
+ 
+ /**
+  **  System-specific constants follow
 diff --git a/gcc/ada/system-bare-armeb.ads b/gcc/ada/system-bare-armeb.ads
 new file mode 100644
 index 0000000..1ece9cd
@@ -1205,7 +1214,7 @@ index 0000000..f20bfbf
 +
 +end System;
 diff --git a/gcc/ada/terminals.c b/gcc/ada/terminals.c
-index 36b97a6..0fab553 100644
+index 8672ca3..3fae7ec 100644
 --- a/gcc/ada/terminals.c
 +++ b/gcc/ada/terminals.c
 @@ -32,7 +32,7 @@
@@ -1228,10 +1237,10 @@ index 36b97a6..0fab553 100644
  #endif
  
 diff --git a/gcc/config.gcc b/gcc/config.gcc
-index 2b54dd9..e839aab 100644
+index 58c4b43..b43f44d 100644
 --- a/gcc/config.gcc
 +++ b/gcc/config.gcc
-@@ -3826,6 +3826,15 @@ case ${target} in
+@@ -4212,6 +4212,15 @@ case ${target} in
  		;;
  esac
  
@@ -1245,7 +1254,7 @@ index 2b54dd9..e839aab 100644
 +esac
 +
  t=
- all_defaults="abi cpu cpu_32 cpu_64 arch arch_32 arch_64 tune tune_32 tune_64 schedule float mode fpu divide llsc mips-plt synci tls"
+ all_defaults="abi cpu cpu_32 cpu_64 arch arch_32 arch_64 tune tune_32 tune_64 schedule float mode fpu nan divide llsc mips-plt synci tls"
  for option in $all_defaults
 diff --git a/gcc/config/elfbare.h b/gcc/config/elfbare.h
 new file mode 100644
@@ -1287,10 +1296,10 @@ index 0000000..09c10f2
 +    }				        \
 +  while (0)
 diff --git a/gnattools/configure b/gnattools/configure
-index 883b705..3f672a9 100755
+index 0518308..ff2ef5e 100755
 --- a/gnattools/configure
 +++ b/gnattools/configure
-@@ -2090,6 +2090,13 @@ case "${target}" in
+@@ -2085,6 +2085,13 @@ case "${target}" in
      indepsw.adb<indepsw-mingw.adb"
      EXTRA_GNATTOOLS='../../gnatdll$(exeext)'
      ;;
@@ -1305,10 +1314,10 @@ index 883b705..3f672a9 100755
  
  # From user or toplevel makefile.
 diff --git a/gnattools/configure.ac b/gnattools/configure.ac
-index 5edaadf..8a94329 100644
+index 46658fb..044c3b1 100644
 --- a/gnattools/configure.ac
 +++ b/gnattools/configure.ac
-@@ -130,6 +130,13 @@ case "${target}" in
+@@ -125,6 +125,13 @@ case "${target}" in
      indepsw.adb<indepsw-mingw.adb"
      EXTRA_GNATTOOLS='../../gnatdll$(exeext)'
      ;;
@@ -1323,7 +1332,7 @@ index 5edaadf..8a94329 100644
  
  # From user or toplevel makefile.
 diff --git a/libada/configure b/libada/configure
-index da92d0e..e3af229 100755
+index 55d63fa..7a84f4f 100755
 --- a/libada/configure
 +++ b/libada/configure
 @@ -2024,6 +2024,7 @@ esac
@@ -1378,7 +1387,7 @@ index da92d0e..e3af229 100755
  $as_echo_n "checking for suffix of object files... " >&6; }
  if test "${ac_cv_objext+set}" = set; then :
 diff --git a/libada/configure.ac b/libada/configure.ac
-index 30c1782..961c52b 100644
+index 4af70d1..f81063d 100644
 --- a/libada/configure.ac
 +++ b/libada/configure.ac
 @@ -20,6 +20,7 @@ sinclude(../config/multi.m4)
@@ -1398,5 +1407,5 @@ index 30c1782..961c52b 100644
  m4_rename_force([real_PRECIOUS],[_AC_ARG_VAR_PRECIOUS])
  
 -- 
-1.8.3.2
+2.3.1
 

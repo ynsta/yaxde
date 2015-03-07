@@ -1,8 +1,8 @@
 #!/bin/bash
 # =====================================================================
-[ -z "${VERSION}" ] && VERSION=4.8-$(date +%Y.%m)
+[ -z "${VERSION}" ] && VERSION=4.9-$(date +%Y.%m)
 TARGET=tools
-HOST=i686-pc-mingw32
+HOST=i686-w64-mingw32.static
 # =====================================================================
 
 SCRIPT_DIR="$(dirname $0)"
@@ -18,8 +18,8 @@ build-env
 
 # =====================================================================
 GCC_PATCHES="\
-${PKGDIR}/gcc-4.8.3-arm-cortex-elf-multilibs.patch \
-${PKGDIR}/gcc-4.8.3-ada_bare_board.patch \
+${PKGDIR}/gcc-4.9.2-add-arm-mprofile-for-multilibs.patch \
+${PKGDIR}/gcc-4.9.2-ada_bare_board.patch \
 "
 
 # =====================================================================
@@ -195,7 +195,7 @@ if [ ! -d "${OBJDIR}"/${URJTAG}-${BUILDSUFFIX} ]; then
     autoreconf -i -s -v -f >> "${LOG}" 2>&1 || error
     popd &>/dev/null
 
-    "${SRCDIR}/${URJTAG}"/configure --prefix=${PREFIX} --disable-python --host=${HOST} >> "${LOG}" 2>&1 || error
+    "${SRCDIR}/${URJTAG}"/configure CFLAGS="-DNOCRYPT -DNOUSER" --prefix=${PREFIX} --disable-python --host=${HOST} >> "${LOG}" 2>&1 || error
 
     make         >> "${LOG}" 2>&1 || error
     make install >> "${LOG}" 2>&1 || error

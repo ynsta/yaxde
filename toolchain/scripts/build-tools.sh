@@ -1,6 +1,6 @@
 #!/bin/bash
 # =====================================================================
-[ -z "${VERSION}" ] && VERSION=4.8-$(date +%Y.%m)
+[ -z "${VERSION}" ] && VERSION=4.9-$(date +%Y.%m)
 TARGET=tools
 
 # =====================================================================
@@ -149,6 +149,7 @@ if [ ! -d "${OBJDIR}"/${OPENOCD}-${BUILDSUFFIX} ]; then
     apatch "${SRCDIR}/${OPENOCD}" ${PKGDIR}/${OPENOCD}-zynq.patch
 
     "${SRCDIR}/${OPENOCD}"/configure --prefix=${PREFIX} \
+	--disable-werror \
 	--enable-ftdi \
 	--enable-stlink \
 	--enable-ulink \
@@ -210,7 +211,7 @@ if [ ! -d "${OBJDIR}"/${QEMU}-${BUILDSUFFIX} ]; then
 
     untar ${PKGDIR}/${QEMU}.tar.*
 
-    "${SRCDIR}"/${QEMU}/configure --prefix=${PREFIX} >> "${LOG}" 2>&1 || error
+    "${SRCDIR}"/${QEMU}/configure --prefix=${PREFIX} --python=/usr/bin/python2 >> "${LOG}" 2>&1 || error
 
     make ${JOBS} >> "${LOG}" 2>&1 || error
     make install >> "${LOG}" 2>&1 || error

@@ -1,6 +1,6 @@
 #!/bin/bash
 # =====================================================================
-[ -z "${VERSION}" ] && VERSION=4.8-$(date +%Y.%m)
+[ -z "${VERSION}" ] && VERSION=4.9-$(date +%Y.%m)
 
 # =====================================================================
 # Options
@@ -32,8 +32,8 @@ build-env
 BINUTILS_PATCHES=""
 
 GCC_PATCHES="\
-${PKGDIR}/gcc-4.8.3-arm-cortex-elf-multilibs.patch \
-${PKGDIR}/gcc-4.8.3-ada_bare_board.patch \
+${PKGDIR}/gcc-4.9.2-add-arm-mprofile-for-multilibs.patch \
+${PKGDIR}/gcc-4.9.2-ada_bare_board.patch \
 "
 
 NEWLIB_PATCHES=""

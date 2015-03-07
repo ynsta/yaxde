@@ -1,25 +1,20 @@
 #!/bin/bash
 # =====================================================================
-[ -z "${VERSION}" ] && VERSION=4.8-$(date +%Y.%m)
+[ -z "${VERSION}" ] && VERSION=4.9-$(date +%Y.%m)
 
 TARGET=arm-none-eabi
-HOST=i686-pc-mingw32
-
-#GCCCPU=cortex-m3
-#GCCARCH=armv7-m
 
 # =====================================================================
 # Options
 
 # Set to 1 to build GDB with python support
-GDBPYTHON=0
+GDBPYTHON=1
 
 # Language support to build (usualy c or c,c++)
 LANGUAGES="c,c++,ada"
 
 GCCEXTRACFG=" \
---enable-interwork \
---with-multilib-list=all,arm"
+--with-multilib-list=mprofile"
 
 MULTILIB=1
 
@@ -41,8 +36,8 @@ build-env
 BINUTILS_PATCHES=""
 
 GCC_PATCHES="\
-${PKGDIR}/gcc-4.8.3-arm-cortex-elf-multilibs.patch \
-${PKGDIR}/gcc-4.8.3-ada_bare_board.patch \
+${PKGDIR}/gcc-4.9.2-add-arm-mprofile-for-multilibs.patch \
+${PKGDIR}/gcc-4.9.2-ada_bare_board.patch \
 "
 
 NEWLIB_PATCHES=""
@@ -56,7 +51,6 @@ build-mpc
 patch-newlib ${NEWLIB_PATCHES}
 # =====================================================================
 build-native-gcc ${GCC_PATCHES}
-build-mxe
 # =====================================================================
 build-binutils ${BINUTILS_PATCHES}
 build-gcc ${GCC_PATCHES}
@@ -65,5 +59,3 @@ build-gdb ${GDB_PATCHES}
 build-newlibnano
 # =====================================================================
 remove-srcdirs
-# =====================================================================
-build-setup

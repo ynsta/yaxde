@@ -105,7 +105,7 @@ function build-env() {
     unset LIBRARY_PATH
 
     [ -z ${HOSTVERSION} ] &&  \
-	HOSTVERSION=$(python -c 'import platform; print "-".join(platform.dist()[0:2] + (platform.machine(), )).lower()')
+	HOSTVERSION=$(python3 -c 'import platform; print("-".join(platform.dist()[0:2] + (platform.machine(), )).lower())')
     [ -z ${TBPATH} ] && TBPATH="${SCRIPT_DIR}/../src"
 
     OBJDIR="${PWD}/${SCRIPT_NAME%.sh}"
@@ -294,6 +294,7 @@ function download-svn()
 
     url="$1"
     pref="$2"
+    rev="${pref##*-}"
     file="$2.tar.xz"
 
     if [ -f "${file}" ]; then
@@ -302,7 +303,7 @@ function download-svn()
 	rm "${file}"
     fi
 
-    svn export "${url}" "${pref}"
+    svn export "${url}" "${pref}" -r "${rev}"
     XZ_OPT=-9e tar cJf "${file}" "${pref}"
     rm -rf "${pref}"
     md5sum "${file}" > "${file}".md5
@@ -337,8 +338,10 @@ function build-mxe() {
 
 	cd mxe-${VERSION} || error
 
-	git co ${MXE} -b x-tools
-	git am ${PKGDIR}/mxe-compile-gnat-with-gcc.patch
+	git checkout ${MXE} -b x-tools
+	patch -p1 < ${PKGDIR}/mxe-compile-gnat-with-gcc.patch
+	git add .
+	git commit -s -m 'Compile Ada support in gcc'
 
 	download \
 	    http://ftp.gnu.org/gnu/gcc/${GCC}/${GCC}.tar.bz2 \
@@ -537,7 +540,7 @@ function build-newlibnano() {
 	    make ${JOBS} >> "${LOG}" 2>&1 || error
 	    make install >> "${LOG}" 2>&1 || error
 
-	    for mlib in $(${BPREFIX}/${TARGET}/bin/gcc -print-multi-lib) ; do
+	    for mlib in $(${BPREFIX}/bin/${TARGET}-gcc -print-multi-lib) ; do
 		lib="${mlib%%;*}"
 		src=${PREFIX}/tmp/${TARGET}/lib/${lib}
 		dst=${PREFIX}/${TARGET}/lib/${lib}
@@ -563,7 +566,14 @@ function build-gcc() {
 
     if [ ! -z ${GCC} ]; then
 
-	download http://ftp.gnu.org/gnu/gcc/${GCC}/${GCC}.tar.bz2
+	if [ "${GCC/linaro}" != "${GCC}" ]; then
+	    rel=$(python2 -c "print '${GCC}'[-5:]")
+	    bra=$(python2 -c "import re; print '.'.join(re.compile('[.-]').split('${GCC}')[2:4])")
+	    download https://releases.linaro.org/${rel}/components/toolchain/gcc-linaro/${bra}/${GCC}.tar.xz
+	else
+	    download http://ftp.gnu.org/gnu/gcc/${GCC}/${GCC}.tar.bz2
+	fi
+
 	download ftp://sourceware.org/pub/newlib/${NEWLIB}.tar.gz
 
         # =============================================================
@@ -1132,7 +1142,7 @@ function build-gdb() {
 
     if [ ! -z ${GDB} ]; then
 
-	download http://ftp.gnu.org/gnu/gdb/${GDB}.tar.bz2
+	download http://ftp.gnu.org/gnu/gdb/${GDB}.tar.xz
 
 	pushd . &>/dev/null
 

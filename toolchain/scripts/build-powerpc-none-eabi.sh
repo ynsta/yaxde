@@ -1,11 +1,11 @@
 #!/bin/bash
 # =====================================================================
-[ -z "${VERSION}" ] && VERSION=4.8-$(date +%Y.%m)
+[ -z "${VERSION}" ] && VERSION=4.9-$(date +%Y.%m)
 
-TARGET=m68k-none-elf
+TARGET=powerpc-none-eabi
 
-GCCCPU=5475
-GCCARCH=cf
+GCCCPU=
+GCCARCH=
 
 # =====================================================================
 # Options
@@ -38,12 +38,10 @@ build-env
 BINUTILS_PATCHES=""
 
 GCC_PATCHES="\
-${PKGDIR}/gcc-4.8.3-ada_bare_board.patch \
+${PKGDIR}/gcc-4.9.2-ada_bare_board.patch \
 "
 
-NEWLIB_PATCHES="\
-${PKGDIR}/newlib-2.1.0-correct-read-write-prototype-for-m68k.patch \
-"
+NEWLIB_PATCHES=""
 
 GDB_PATCHES=""
 
@@ -59,6 +57,6 @@ build-binutils ${BINUTILS_PATCHES}
 build-gcc ${GCC_PATCHES}
 build-expat
 build-gdb ${GDB_PATCHES}
-build-newlibnano ${NEWLIB_PATCHES}
+build-newlibnano
 # =====================================================================
 remove-srcdirs

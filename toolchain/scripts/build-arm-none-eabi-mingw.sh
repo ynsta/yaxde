@@ -1,12 +1,9 @@
 #!/bin/bash
 # =====================================================================
-[ -z "${VERSION}" ] && VERSION=4.8-$(date +%Y.%m)
+[ -z "${VERSION}" ] && VERSION=4.9-$(date +%Y.%m)
 
-TARGET=m68k-none-elf
-HOST=i686-pc-mingw32
-
-GCCCPU=5475
-GCCARCH=cf
+TARGET=arm-none-eabi
+HOST=i686-w64-mingw32.static
 
 # =====================================================================
 # Options
@@ -17,7 +14,8 @@ GDBPYTHON=0
 # Language support to build (usualy c or c,c++)
 LANGUAGES="c,c++,ada"
 
-GCCEXTRACFG=""
+GCCEXTRACFG=" \
+--with-multilib-list=mprofile"
 
 MULTILIB=1
 
@@ -39,12 +37,11 @@ build-env
 BINUTILS_PATCHES=""
 
 GCC_PATCHES="\
-${PKGDIR}/gcc-4.8.3-ada_bare_board.patch \
+${PKGDIR}/gcc-4.9.2-add-arm-mprofile-for-multilibs.patch \
+${PKGDIR}/gcc-4.9.2-ada_bare_board.patch \
 "
 
-NEWLIB_PATCHES="\
-${PKGDIR}/newlib-2.1.0-correct-read-write-prototype-for-m68k.patch \
-"
+NEWLIB_PATCHES=""
 
 GDB_PATCHES=""
 
@@ -61,7 +58,7 @@ build-binutils ${BINUTILS_PATCHES}
 build-gcc ${GCC_PATCHES}
 build-expat
 build-gdb ${GDB_PATCHES}
-build-newlibnano ${NEWLIB_PATCHES}
+build-newlibnano
 # =====================================================================
 remove-srcdirs
 # =====================================================================

@@ -1,12 +1,12 @@
 #!/bin/bash
 # =====================================================================
-[ -z "${VERSION}" ] && VERSION=4.8-$(date +%Y.%m)
+[ -z "${VERSION}" ] && VERSION=4.9-$(date +%Y.%m)
 
-TARGET=powerpc-none-eabi
-HOST=i686-pc-mingw32
+TARGET=m68k-none-elf
+HOST=i686-w64-mingw32.static
 
-GCCCPU=
-GCCARCH=
+GCCCPU=5475
+GCCARCH=cf
 
 # =====================================================================
 # Options
@@ -39,7 +39,7 @@ build-env
 BINUTILS_PATCHES=""
 
 GCC_PATCHES="\
-${PKGDIR}/gcc-4.8.3-ada_bare_board.patch \
+${PKGDIR}/gcc-4.9.2-ada_bare_board.patch \
 "
 
 NEWLIB_PATCHES=""
@@ -59,7 +59,7 @@ build-binutils ${BINUTILS_PATCHES}
 build-gcc ${GCC_PATCHES}
 build-expat
 build-gdb ${GDB_PATCHES}
-build-newlibnano
+build-newlibnano ${NEWLIB_PATCHES}
 # =====================================================================
 remove-srcdirs
 # =====================================================================
