@@ -105,7 +105,7 @@ function build-env() {
     unset LIBRARY_PATH
 
     [ -z ${HOSTVERSION} ] &&  \
-	HOSTVERSION=$(python3 -c 'import platform; print("-".join(platform.dist()[0:2] + (platform.machine(), )).lower())')
+	HOSTVERSION=$(python -c 'import platform; print("-".join(platform.dist()[0:2] + (platform.machine(), )).lower())')
     [ -z ${TBPATH} ] && TBPATH="${SCRIPT_DIR}/../src"
 
     OBJDIR="${PWD}/${SCRIPT_NAME%.sh}"
@@ -343,12 +343,12 @@ function build-mxe() {
 	git add .
 	git commit -s -m 'Compile Ada support in gcc'
 
-	download \
-	    http://ftp.gnu.org/gnu/gcc/${GCC}/${GCC}.tar.bz2 \
-	    http://ftp.gnu.org/gnu/binutils/${BINUTILS}.tar.bz2 \
-	    http://ftp.gnu.org/gnu/gmp/${GMP}.tar.bz2 \
-	    http://www.mpfr.org/mpfr-current/${MPFR}.tar.xz \
-	    http://www.multiprecision.org/mpc/download/${MPC}.tar.gz
+	#download \
+	#    http://ftp.gnu.org/gnu/gcc/${GCC}/${GCC}.tar.bz2 \
+	#    http://ftp.gnu.org/gnu/binutils/${BINUTILS}.tar.bz2 \
+	#    http://ftp.gnu.org/gnu/gmp/${GMP}.tar.bz2 \
+	#    http://www.mpfr.org/mpfr-current/${MPFR}.tar.xz \
+	#    http://www.multiprecision.org/mpc/download/${MPC}.tar.gz
 
 	ln -s ${PKGDIR} pkg
 
@@ -749,7 +749,13 @@ function build-native-gcc() {
 	    return ;
 	fi
 
-	download http://ftp.gnu.org/gnu/gcc/${GCC}/${GCC}.tar.bz2
+	if [ "${GCC/linaro/}" != "${GCC}" ]; then
+	    rel=$(python2 -c "print '${GCC}'[-5:]")
+	    bra=$(python2 -c "import re; print '.'.join(re.compile('[.-]').split('${GCC}')[2:4])")
+	    download https://releases.linaro.org/${rel}/components/toolchain/gcc-linaro/${bra}/${GCC}.tar.xz
+	else
+	    download http://ftp.gnu.org/gnu/gcc/${GCC}/${GCC}.tar.bz2
+	fi
 
 	# Get GNAT Version
 	gnat=$(which /usr/bin/gnat 2>/dev/null || which gnat)
@@ -845,7 +851,14 @@ function build-gcc-eglibc() {
 	# =============================================================
 	head "build-gcc-eglibc: preparing gcc & eglibc builds"
 
-	download http://ftp.gnu.org/gnu/gcc/${GCC}/${GCC}.tar.bz2
+
+	if [ "${GCC/linaro/}" != "${GCC}" ]; then
+	    rel=$(python2 -c "print '${GCC}'[-5:]")
+	    bra=$(python2 -c "import re; print '.'.join(re.compile('[.-]').split('${GCC}')[2:4])")
+	    download https://releases.linaro.org/${rel}/components/toolchain/gcc-linaro/${bra}/${GCC}.tar.xz
+	else
+	    download http://ftp.gnu.org/gnu/gcc/${GCC}/${GCC}.tar.bz2
+	fi
 	# FIXME download eglibc from svn
 
 	pushd . &>/dev/null

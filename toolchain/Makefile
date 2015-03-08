@@ -53,7 +53,7 @@ ifneq ($(PREFIX),)
 export PREFIX:=
 endif
 
-distrib		:= $(shell python3 -c 'import platform; print("-".join(platform.dist()[0:2] + (platform.machine(), )).lower())')
+distrib		:= $(shell python -c 'import platform; print("-".join(platform.dist()[0:2] + (platform.machine(), )).lower())')
 
 space		:=
 space		+=
@@ -62,7 +62,7 @@ vbase		:= $(word 1,$(subst -,$(space),$(VERSION)))
 
 builds		:= $(foreach t,$(targets),$(BASEPATH)/$(t)-$(VERSION))
 
-mingwt		:= i686-pc-mingw32
+mingwt		:= i686-w64-mingw32.static
 mingws		:= $(foreach t,$(mtargets),builds/$(mingwt)/$(t)-$(VERSION)_setup.exe)
 
 tarballs	:= builds/$(distrib)/$(build)-$(VERSION).tar.xz

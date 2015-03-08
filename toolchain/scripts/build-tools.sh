@@ -20,6 +20,9 @@ pushd . &>/dev/null
 
 # =====================================================================
 mkdir -p ${PREFIX}/bin
+mkdir -p ${PREFIX}/lib
+ln -s    ${PREFIX}/lib ${PREFIX}/lib64
+
 cp -v ${PKGDIR}/stm32sbl.py ${PREFIX}/bin
 # =====================================================================
 

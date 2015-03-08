@@ -47,8 +47,9 @@ case $install in
     */yum)
 	yum install -y nsis yasm git-all yum-utils checkinstall \
 	    libusb1-devel gcc gcc-gnat python-devel xz \
-	    autoconf automake autopoint gawk m4 sed tar bunzip gtk3-devel
-	yum-builddep -y gcc gcc-gnat gdb binutils qemu
+	    autoconf automake autopoint gawk m4 sed tar bunzip gtk3-devel \
+	    scons gperf libusb-devel libusbx-devel
+	yum-builddep -y gcc gcc-gnat gdb binutils
 	;;
 esac
 
