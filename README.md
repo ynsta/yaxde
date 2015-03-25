@@ -72,9 +72,12 @@ implemented for each board (see also AdaRuntime).
 
 ### Installation
 Tested on xubuntu 12.10 i686 and x86_64 :
+
 run
-    # sudo make install-deps
-    # make install-toolchain
+```
+# sudo make install-deps
+# make install-toolchain
+```
 
 ### TARGETs
 
